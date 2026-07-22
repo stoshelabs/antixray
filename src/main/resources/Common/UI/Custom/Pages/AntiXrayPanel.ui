@@ -1,0 +1,99 @@
+$C = "../AntiXrayUI.ui";
+$Sounds = "../AntiXraySounds.ui";
+
+$C.@PageOverlay {}
+
+$C.@Container #AdminRoot {
+  Anchor: (Width: 820, Height: 560);
+
+  #Title {
+    $C.@Title #AdminTitle { @Text = "ANTI-XRAY"; }
+  }
+
+  #Content {
+    LayoutMode: Left;
+
+    /* ---- Sidebar ---- */
+    Group {
+      Anchor: (Width: 190, Top: 0, Bottom: 0);
+      LayoutMode: Top;
+      $C.@AeroNavButton #NavSuspects { @Text = "Suspects"; }
+      $C.@AeroNavButtonActive #NavSuspectsActive { @Text = "Suspects"; Visible: false; }
+      $C.@AeroNavButton #NavTools { @Text = "Tools"; }
+      $C.@AeroNavButtonActive #NavToolsActive { @Text = "Tools"; Visible: false; }
+      $C.@AeroNavButton #NavStatus { @Text = "Status"; }
+      $C.@AeroNavButtonActive #NavStatusActive { @Text = "Status"; Visible: false; }
+      Group { FlexWeight: 1; }
+      $C.@SecondaryTextButton #BtnClose { @Sounds = $Sounds.@ButtonsCancel; @Anchor = (Horizontal: 0, Height: 36); Text: "Close"; }
+    }
+
+    Group { Anchor: (Width: 14); }
+
+    /* ---- Content ---- */
+    Group {
+      Anchor: (Top: 0, Bottom: 0);
+      FlexWeight: 1;
+      LayoutMode: Top;
+
+      /* ===== Suspects tab ===== */
+      Group #PanelSuspects {
+        FlexWeight: 1; LayoutMode: Top; Visible: false;
+        Label #SuspSubtitle { Anchor: (Horizontal: 0, Height: 18, Bottom: 6); Style: (...$C.@DefaultLabelStyle, FontSize: 12, TextColor: #b2c1d0); Text: ""; }
+        Label #SuspCount { Anchor: (Horizontal: 0, Height: 18, Bottom: 6); Style: (...$C.@DefaultLabelStyle, FontSize: 12, TextColor: #cbd9e8); Text: ""; }
+        Label #SuspEmpty { Anchor: (Horizontal: 0, Height: 18, Bottom: 6); Style: (...$C.@DefaultLabelStyle, FontSize: 12, TextColor: #d6a6a6); Text: ""; Visible: false; }
+        Group { Anchor: (Horizontal: 0, Bottom: 8); FlexWeight: 1; LayoutMode: TopScrolling; ScrollbarStyle: $C.@DefaultScrollbarStyle;
+          Group #SuspRow0 { Anchor: (Height: 34, Horizontal: 0, Bottom: 4); LayoutMode: Left; Background: (Color: #2a1d1d); Padding: (Left: 12, Right: 10); Visible: false; Label #SuspName0 { Anchor: (Height: 18, Vertical: 0); FlexWeight: 1; Style: (...$C.@DefaultLabelStyle, FontSize: 12, TextColor: #ffffff, VerticalAlignment: Center); Text: ""; } Group { Anchor: (Width: 6); } $C.@SmallSecondaryTextButton #BtnSpec0 { @Anchor = (Width: 120, Height: 28); Text: "Spectate"; } }
+          Group #SuspRow1 { Anchor: (Height: 34, Horizontal: 0, Bottom: 4); LayoutMode: Left; Background: (Color: #2a1d1d); Padding: (Left: 12, Right: 10); Visible: false; Label #SuspName1 { Anchor: (Height: 18, Vertical: 0); FlexWeight: 1; Style: (...$C.@DefaultLabelStyle, FontSize: 12, TextColor: #ffffff, VerticalAlignment: Center); Text: ""; } Group { Anchor: (Width: 6); } $C.@SmallSecondaryTextButton #BtnSpec1 { @Anchor = (Width: 120, Height: 28); Text: "Spectate"; } }
+          Group #SuspRow2 { Anchor: (Height: 34, Horizontal: 0, Bottom: 4); LayoutMode: Left; Background: (Color: #2a1d1d); Padding: (Left: 12, Right: 10); Visible: false; Label #SuspName2 { Anchor: (Height: 18, Vertical: 0); FlexWeight: 1; Style: (...$C.@DefaultLabelStyle, FontSize: 12, TextColor: #ffffff, VerticalAlignment: Center); Text: ""; } Group { Anchor: (Width: 6); } $C.@SmallSecondaryTextButton #BtnSpec2 { @Anchor = (Width: 120, Height: 28); Text: "Spectate"; } }
+          Group #SuspRow3 { Anchor: (Height: 34, Horizontal: 0, Bottom: 4); LayoutMode: Left; Background: (Color: #2a1d1d); Padding: (Left: 12, Right: 10); Visible: false; Label #SuspName3 { Anchor: (Height: 18, Vertical: 0); FlexWeight: 1; Style: (...$C.@DefaultLabelStyle, FontSize: 12, TextColor: #ffffff, VerticalAlignment: Center); Text: ""; } Group { Anchor: (Width: 6); } $C.@SmallSecondaryTextButton #BtnSpec3 { @Anchor = (Width: 120, Height: 28); Text: "Spectate"; } }
+          Group #SuspRow4 { Anchor: (Height: 34, Horizontal: 0, Bottom: 4); LayoutMode: Left; Background: (Color: #2a1d1d); Padding: (Left: 12, Right: 10); Visible: false; Label #SuspName4 { Anchor: (Height: 18, Vertical: 0); FlexWeight: 1; Style: (...$C.@DefaultLabelStyle, FontSize: 12, TextColor: #ffffff, VerticalAlignment: Center); Text: ""; } Group { Anchor: (Width: 6); } $C.@SmallSecondaryTextButton #BtnSpec4 { @Anchor = (Width: 120, Height: 28); Text: "Spectate"; } }
+          Group #SuspRow5 { Anchor: (Height: 34, Horizontal: 0, Bottom: 4); LayoutMode: Left; Background: (Color: #2a1d1d); Padding: (Left: 12, Right: 10); Visible: false; Label #SuspName5 { Anchor: (Height: 18, Vertical: 0); FlexWeight: 1; Style: (...$C.@DefaultLabelStyle, FontSize: 12, TextColor: #ffffff, VerticalAlignment: Center); Text: ""; } Group { Anchor: (Width: 6); } $C.@SmallSecondaryTextButton #BtnSpec5 { @Anchor = (Width: 120, Height: 28); Text: "Spectate"; } }
+          Group #SuspRow6 { Anchor: (Height: 34, Horizontal: 0, Bottom: 4); LayoutMode: Left; Background: (Color: #2a1d1d); Padding: (Left: 12, Right: 10); Visible: false; Label #SuspName6 { Anchor: (Height: 18, Vertical: 0); FlexWeight: 1; Style: (...$C.@DefaultLabelStyle, FontSize: 12, TextColor: #ffffff, VerticalAlignment: Center); Text: ""; } Group { Anchor: (Width: 6); } $C.@SmallSecondaryTextButton #BtnSpec6 { @Anchor = (Width: 120, Height: 28); Text: "Spectate"; } }
+          Group #SuspRow7 { Anchor: (Height: 34, Horizontal: 0, Bottom: 4); LayoutMode: Left; Background: (Color: #2a1d1d); Padding: (Left: 12, Right: 10); Visible: false; Label #SuspName7 { Anchor: (Height: 18, Vertical: 0); FlexWeight: 1; Style: (...$C.@DefaultLabelStyle, FontSize: 12, TextColor: #ffffff, VerticalAlignment: Center); Text: ""; } Group { Anchor: (Width: 6); } $C.@SmallSecondaryTextButton #BtnSpec7 { @Anchor = (Width: 120, Height: 28); Text: "Spectate"; } }
+          Group #SuspRow8 { Anchor: (Height: 34, Horizontal: 0, Bottom: 4); LayoutMode: Left; Background: (Color: #2a1d1d); Padding: (Left: 12, Right: 10); Visible: false; Label #SuspName8 { Anchor: (Height: 18, Vertical: 0); FlexWeight: 1; Style: (...$C.@DefaultLabelStyle, FontSize: 12, TextColor: #ffffff, VerticalAlignment: Center); Text: ""; } Group { Anchor: (Width: 6); } $C.@SmallSecondaryTextButton #BtnSpec8 { @Anchor = (Width: 120, Height: 28); Text: "Spectate"; } }
+          Group #SuspRow9 { Anchor: (Height: 34, Horizontal: 0, Bottom: 4); LayoutMode: Left; Background: (Color: #2a1d1d); Padding: (Left: 12, Right: 10); Visible: false; Label #SuspName9 { Anchor: (Height: 18, Vertical: 0); FlexWeight: 1; Style: (...$C.@DefaultLabelStyle, FontSize: 12, TextColor: #ffffff, VerticalAlignment: Center); Text: ""; } Group { Anchor: (Width: 6); } $C.@SmallSecondaryTextButton #BtnSpec9 { @Anchor = (Width: 120, Height: 28); Text: "Spectate"; } }
+        }
+        $C.@SecondaryTextButton #BtnRefresh { @Anchor = (Horizontal: 0, Height: 34); Text: "Refresh"; }
+      }
+
+      /* ===== Tools tab ===== */
+      Group #PanelTools {
+        FlexWeight: 1; LayoutMode: TopScrolling; ScrollbarStyle: $C.@DefaultScrollbarStyle; Visible: false;
+        Label #ToolsTitle { Anchor: (Horizontal: 0, Height: 20, Bottom: 10); Style: (...$C.@DefaultLabelStyle, FontSize: 14, TextColor: #7ac0ff, RenderBold: true); Text: ""; }
+        $C.@SecondaryTextButton #BtnProbe { @Anchor = (Horizontal: 0, Height: 34, Bottom: 2); Text: "Probe"; }
+        Label #HintProbe { Anchor: (Horizontal: 0, Height: 16, Bottom: 10); Style: (...$C.@DefaultLabelStyle, FontSize: 11, TextColor: #8ea0b2); Text: ""; }
+        $C.@SecondaryTextButton #BtnTest { @Anchor = (Horizontal: 0, Height: 34, Bottom: 2); Text: ""; Visible: false; }
+        Label #HintTest { Anchor: (Horizontal: 0, Height: 16, Bottom: 10); Style: (...$C.@DefaultLabelStyle, FontSize: 11, TextColor: #8ea0b2); Text: ""; Visible: false; }
+        $C.@SecondaryTextButton #BtnSim { @Anchor = (Horizontal: 0, Height: 34, Bottom: 2); Text: ""; Visible: false; }
+        Label #HintSim { Anchor: (Horizontal: 0, Height: 16, Bottom: 10); Style: (...$C.@DefaultLabelStyle, FontSize: 11, TextColor: #8ea0b2); Text: ""; Visible: false; }
+        $C.@SecondaryTextButton #BtnTraps { @Anchor = (Horizontal: 0, Height: 34, Bottom: 2); Text: ""; Visible: false; }
+        Label #HintTraps { Anchor: (Horizontal: 0, Height: 16, Bottom: 10); Style: (...$C.@DefaultLabelStyle, FontSize: 11, TextColor: #8ea0b2); Text: ""; Visible: false; }
+        $C.@SecondaryTextButton #BtnAudit { @Anchor = (Horizontal: 0, Height: 34, Bottom: 2); Text: ""; Visible: false; }
+        Label #HintAudit { Anchor: (Horizontal: 0, Height: 16, Bottom: 10); Style: (...$C.@DefaultLabelStyle, FontSize: 11, TextColor: #8ea0b2); Text: ""; Visible: false; }
+        $C.@SecondaryTextButton #BtnReload { @Anchor = (Horizontal: 0, Height: 34, Bottom: 2); Text: "Reload"; }
+        Label #HintReload { Anchor: (Horizontal: 0, Height: 16, Bottom: 10); Style: (...$C.@DefaultLabelStyle, FontSize: 11, TextColor: #8ea0b2); Text: ""; }
+        $C.@SecondaryTextButton #BtnView { @Anchor = (Horizontal: 0, Height: 34, Bottom: 2); Text: "Camera view"; }
+        Label #HintView { Anchor: (Horizontal: 0, Height: 16, Bottom: 10); Style: (...$C.@DefaultLabelStyle, FontSize: 11, TextColor: #8ea0b2); Text: ""; }
+        $C.@SecondaryTextButton #BtnStopSpec { @Anchor = (Horizontal: 0, Height: 34, Bottom: 2); Text: "Stop spectating"; }
+        Label #HintStopSpec { Anchor: (Horizontal: 0, Height: 16, Bottom: 10); Style: (...$C.@DefaultLabelStyle, FontSize: 11, TextColor: #8ea0b2); Text: ""; }
+        Group { FlexWeight: 1; }
+        $C.@SmallTertiaryTextButton #BtnClear { @Anchor = (Horizontal: 0, Height: 32); Text: "Clear all data"; }
+        Label #HintClear { Anchor: (Horizontal: 0, Height: 16, Top: 4); Style: (...$C.@DefaultLabelStyle, FontSize: 11, TextColor: #8ea0b2); Text: ""; }
+      }
+
+      /* ===== Status tab ===== */
+      Group #PanelStatus {
+        FlexWeight: 1; LayoutMode: Top; Visible: false;
+        Label #StatusTitle { Anchor: (Horizontal: 0, Height: 20, Bottom: 12); Style: (...$C.@DefaultLabelStyle, FontSize: 14, TextColor: #7ac0ff, RenderBold: true); Text: ""; }
+        Label #StatObf { Anchor: (Horizontal: 0, Height: 20, Bottom: 6); Style: (...$C.@DefaultLabelStyle, FontSize: 13, TextColor: #ffffff); Text: ""; }
+        Label #StatDet { Anchor: (Horizontal: 0, Height: 20, Bottom: 6); Style: (...$C.@DefaultLabelStyle, FontSize: 13, TextColor: #ffffff); Text: ""; }
+        Label #StatFakeOres { Anchor: (Horizontal: 0, Height: 20, Bottom: 6); Style: (...$C.@DefaultLabelStyle, FontSize: 13, TextColor: #cbd9e8); Text: ""; }
+        Label #StatProtected { Anchor: (Horizontal: 0, Height: 20, Bottom: 6); Style: (...$C.@DefaultLabelStyle, FontSize: 13, TextColor: #cbd9e8); Text: ""; }
+        Label #StatTracked { Anchor: (Horizontal: 0, Height: 20, Bottom: 6); Style: (...$C.@DefaultLabelStyle, FontSize: 13, TextColor: #cbd9e8); Text: ""; }
+        Label #StatWorlds { Anchor: (Horizontal: 0, Height: 20, Bottom: 6); Style: (...$C.@DefaultLabelStyle, FontSize: 13, TextColor: #cbd9e8); Text: ""; }
+        Label #StatProbe { Anchor: (Horizontal: 0, Height: 20, Bottom: 6); Style: (...$C.@DefaultLabelStyle, FontSize: 13, TextColor: #cbd9e8); Text: ""; }
+        Label #StatSpec { Anchor: (Horizontal: 0, Height: 20, Bottom: 6); Style: (...$C.@DefaultLabelStyle, FontSize: 13, TextColor: #cbd9e8); Text: ""; }
+      }
+    }
+  }
+}

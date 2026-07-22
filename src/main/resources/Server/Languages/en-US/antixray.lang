@@ -1,0 +1,11 @@
+items.AntiXray_SpecNext.name = Next Suspect
+items.AntiXray_SpecNext.description = Click anywhere (even in the air) to jump the camera to the next online suspect.
+
+items.AntiXray_SpecView.name = Camera View
+items.AntiXray_SpecView.description = Click anywhere to flip between first person (the suspect's eyes) and third person.
+
+items.AntiXray_SpecInv.name = Suspect's Inventory
+items.AntiXray_SpecInv.description = Click anywhere to show or hide what the suspect is carrying.
+
+items.AntiXray_SpecExit.name = Stop Spectating
+items.AntiXray_SpecExit.description = Click anywhere to detach the camera and go back to where you were.

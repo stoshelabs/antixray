@@ -1,0 +1,119 @@
+// Spectator HUD: a small right-anchored panel shown while an admin is attached to a suspect. Same
+// container widget/textures as the admin panel ($C.@Container from AntiXrayUI.ui), same structure as
+// aerowars' scoreboard HUD. Element ids stay in sync with SpectateHud.java; the whole panel is shown
+// and hidden by toggling #AxSpecRoot.Visible.
+$C = "../AntiXrayUI.ui";
+
+Group #AxSpecRoot {
+  Anchor: (Left: 0, Right: 0, Top: 0, Bottom: 0);
+  Visible: false;
+
+  $C.@Container #AxSpecPanel {
+    Anchor: (Right: 16, Width: 250, Height: 420);
+
+    #Title {
+      $C.@Title #AxSpecTitle { @Text = "SPECTATING"; }
+    }
+
+    #Content {
+      LayoutMode: Top;
+      Padding: (Top: 14, Bottom: 14, Left: 16, Right: 16);
+
+      Label #AxSpecTarget {
+        Text: "";
+        Style: (...$C.@DefaultLabelStyle, FontSize: 15, TextColor: #ffffff, RenderBold: true, HorizontalAlignment: Start);
+        Anchor: (Horizontal: 0, Height: 20);
+      }
+      Label #AxSpecView {
+        Text: "";
+        Style: (...$C.@DefaultLabelStyle, FontSize: 12, TextColor: #7ac0ff, HorizontalAlignment: Start);
+        Anchor: (Horizontal: 0, Height: 16, Top: 3);
+      }
+      Label #AxSpecScore {
+        Text: "";
+        Style: (...$C.@DefaultLabelStyle, FontSize: 12, TextColor: #d6a6a6, HorizontalAlignment: Start);
+        Anchor: (Horizontal: 0, Height: 16, Top: 3);
+      }
+
+      Group #AxSpecRule { Anchor: (Horizontal: 0, Height: 1, Top: 10); Background: (Color: #7a9cc655); }
+
+      Label #AxSpecKeysTitle {
+        Text: "";
+        Style: (...$C.@DefaultLabelStyle, FontSize: 11, TextColor: #8ea0b2, HorizontalAlignment: Start);
+        Anchor: (Horizontal: 0, Height: 16, Top: 8);
+      }
+      Label #AxSpecKey1 {
+        Text: "";
+        Style: (...$C.@DefaultLabelStyle, FontSize: 12, TextColor: #cbd9e8, HorizontalAlignment: Start);
+        Anchor: (Horizontal: 0, Height: 16, Top: 4);
+      }
+      Label #AxSpecKey2 {
+        Text: "";
+        Style: (...$C.@DefaultLabelStyle, FontSize: 12, TextColor: #cbd9e8, HorizontalAlignment: Start);
+        Anchor: (Horizontal: 0, Height: 16, Top: 3);
+      }
+      Label #AxSpecKey3 {
+        Text: "";
+        Style: (...$C.@DefaultLabelStyle, FontSize: 12, TextColor: #cbd9e8, HorizontalAlignment: Start);
+        Anchor: (Horizontal: 0, Height: 16, Top: 3);
+      }
+      Label #AxSpecKey4 {
+        Text: "";
+        Style: (...$C.@DefaultLabelStyle, FontSize: 12, TextColor: #cbd9e8, HorizontalAlignment: Start);
+        Anchor: (Horizontal: 0, Height: 16, Top: 3);
+      }
+
+      Group #AxSpecInvSection {
+        Anchor: (Horizontal: 0, Height: 150, Top: 8);
+        LayoutMode: Top;
+        Visible: false;
+        Group { Anchor: (Horizontal: 0, Height: 1); Background: (Color: #7a9cc655); }
+        Label #AxSpecInvTitle {
+          Text: "";
+          Style: (...$C.@DefaultLabelStyle, FontSize: 11, TextColor: #8ea0b2, HorizontalAlignment: Start);
+          Anchor: (Horizontal: 0, Height: 16, Top: 6);
+        }
+      Label #AxSpecInv0 {
+        Text: "";
+        Style: (...$C.@DefaultLabelStyle, FontSize: 11, TextColor: #cbd9e8, HorizontalAlignment: Start);
+        Anchor: (Horizontal: 0, Height: 14, Top: 2);
+      }
+      Label #AxSpecInv1 {
+        Text: "";
+        Style: (...$C.@DefaultLabelStyle, FontSize: 11, TextColor: #cbd9e8, HorizontalAlignment: Start);
+        Anchor: (Horizontal: 0, Height: 14, Top: 2);
+      }
+      Label #AxSpecInv2 {
+        Text: "";
+        Style: (...$C.@DefaultLabelStyle, FontSize: 11, TextColor: #cbd9e8, HorizontalAlignment: Start);
+        Anchor: (Horizontal: 0, Height: 14, Top: 2);
+      }
+      Label #AxSpecInv3 {
+        Text: "";
+        Style: (...$C.@DefaultLabelStyle, FontSize: 11, TextColor: #cbd9e8, HorizontalAlignment: Start);
+        Anchor: (Horizontal: 0, Height: 14, Top: 2);
+      }
+      Label #AxSpecInv4 {
+        Text: "";
+        Style: (...$C.@DefaultLabelStyle, FontSize: 11, TextColor: #cbd9e8, HorizontalAlignment: Start);
+        Anchor: (Horizontal: 0, Height: 14, Top: 2);
+      }
+      Label #AxSpecInv5 {
+        Text: "";
+        Style: (...$C.@DefaultLabelStyle, FontSize: 11, TextColor: #cbd9e8, HorizontalAlignment: Start);
+        Anchor: (Horizontal: 0, Height: 14, Top: 2);
+      }
+      Label #AxSpecInv6 {
+        Text: "";
+        Style: (...$C.@DefaultLabelStyle, FontSize: 11, TextColor: #cbd9e8, HorizontalAlignment: Start);
+        Anchor: (Horizontal: 0, Height: 14, Top: 2);
+      }
+      Label #AxSpecInv7 {
+        Text: "";
+        Style: (...$C.@DefaultLabelStyle, FontSize: 11, TextColor: #cbd9e8, HorizontalAlignment: Start);
+        Anchor: (Horizontal: 0, Height: 14, Top: 2);
+      }
+      }
+    }
+  }
+}

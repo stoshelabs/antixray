@@ -1,0 +1,96 @@
+{
+  "//": "AntiXray configuration. Keys named '//' are comments and are ignored. Block ids must match your server's assets. Defaults below match Hytale's Ore_<Metal>_<Rock> names (see Server/BlockTypeList/Ores.json). Use '/antixray probe' and mine to confirm the ids on your build.",
+
+  "General": {
+    "//Language": "Language file from lang/ (en_us, pt_br, ...). English is the default and always the fallback.",
+    "Language": "en_us",
+    "PrefixEnabled": true,
+    "Prefix": "{#ff5c5c}[AntiXray] {#ffffff}",
+    "//EnabledWorlds": "Worlds where AntiXray is active. Empty list = every world.",
+    "EnabledWorlds": [],
+    "//BypassPlayers": "Usernames exempt from obfuscation/detection. Explicit list — ops are NOT auto-exempt (so testing as admin still shows the protection).",
+    "BypassPlayers": [],
+    "//BypassByPermission": "Also honour the 'antixray.bypass' permission. Off by default: a wildcard/op permission (*) would otherwise silently disable protection for every admin.",
+    "BypassByPermission": false
+  },
+
+  "Obfuscation": {
+    "//": "Packet-level protection. Every fully-enclosed block a player could only see through walls is replaced, in THAT player's client only, with a random fake ore — masking real ores in a field of fakes so X-ray reveals nothing. Exposed faces and the blocks right around the player are never touched, and breaking a block reveals the real neighbours.",
+    "Enabled": true,
+    "//SendTimeMode": "Delivery mode. false (default) = classic per-player ServerSetBlock scan. true = SEND-TIME: rewrite each chunk's blocks AS it is sent (chunk arrives already-obfuscated, no correction packets, no brief real-ore flash); the obfuscated chunk is cached per section and shared across players, so CPU scales with unique chunks, not player count. Experimental — enable and test on your build.",
+    "SendTimeMode": false,
+    "//ChunkRadius": "Radius in CHUNKS around each player whose nearby chunks get obfuscated.",
+    "ChunkRadius": 6,
+    "//VerticalRadius": "Blocks above AND below the player to obfuscate — a slab that follows them (not the whole column). Keeps it light; updates as they walk/dig.",
+    "VerticalRadius": 32,
+    "//MaxChunksPerTick": "Max new chunks obfuscated per player per second (spreads the load as they move).",
+    "MaxChunksPerTick": 8,
+    "//MaxY": "Absolute ceiling: never obfuscate above this Y (keeps the surface/sky untouched).",
+    "MaxY": 128,
+    "//CoverDepth": "Solid blocks required between a fake ore and any air, along each axis. 1 = just not on a visible face; 2+ = buried deeper so a fake never appears right behind something you can see.",
+    "CoverDepth": 2,
+    "//RevealRadius": "On breaking a block, re-send real blocks within this radius (safety buffer) so mining never uncovers a fake at an angle. Keep close to CoverDepth.",
+    "RevealRadius": 2,
+    "//HoneypotHostPrefixes": "Fake ores only go in blocks whose id starts with one of these (real rock layers), so they never land in dirt/gravel/sand. Empty = any hidden block.",
+    "HoneypotHostPrefixes": ["Rock_"],
+    "//FakeOreDensity": "Fraction (0..1) of hidden rock turned into a fake ore — how dense the honeypot field is (evenly distributed). Real ores are ALWAYS hidden (HideRealOreAs), so this does NOT control how well ores are hidden — only how many honeypots exist. Keep it low: each fake is one ServerSetBlock, and a player using an X-ray pack has to render every one of them (0.2 meant ~10k fakes per chunk = client freeze/crash and a packet burst for everyone).",
+    "//FakeOreDensity_Cost": "Cost scales linearly: one ServerSetBlock packet per fake, capped at 16000 per chunk, at MaxChunksPerTick chunks per second per player. 0.03 over a 32x32x65 slab is roughly 1-1.5k fakes per chunk; 0.2 was ~10k (it hit the cap, burst tens of thousands of packets/s, and froze or crashed any client with a transparency pack, since ore blocks render as custom models).",
+    "//FakeOreDensity_Symptoms": "Too HIGH: stutter for everyone when new chunks load, and X-ray users freeze/crash (which also tips them off that the server is protected, so they turn X-ray off and stop tripping honeypots). Too LOW (near 0): honeypots become rare, detection relies on the mining-rate heuristic alone; real ores stay hidden either way.",
+    "//FakeOreDensity_Range": "Sane range 0.01 - 0.05. Raise only if honeypot hits are too rare in the Status tab. If you need a thicker field, prefer Obfuscation.SendTimeMode (the chunk arrives already obfuscated in one packet, so density costs almost nothing on the wire).",
+    "FakeOreDensity": 0.03,
+    "//MaxTrapsPerPlayer": "Memory cap on tracked honeypot positions per player.",
+    "MaxTrapsPerPlayer": 40000,
+    "//RadiusBlocks": "Block radius used only by the /antixray test and /antixray xray view modes.",
+    "RadiusBlocks": 24,
+    "//FakeOrePalette": "The random fake-ore field. Entries are exact ids OR 'Prefix*' wildcards. The default 'Ore_*' AUTO-DISCOVERS every ore variant actually registered in your world (no manual id list, no 'ids don't match my build' problem). Narrow it (e.g. 'Ore_Gold_*') or list exact ids if you prefer. Check the resolved count in the Status tab.",
+    "FakeOrePalette": ["Ore_*"],
+    "//FallbackHideBlock": "Used only if none of the palette ids resolve.",
+    "FallbackHideBlock": "Rock_Stone",
+    "//HideRealOreAs": "Hidden real ores are replaced with THIS (plain rock) so X-ray sees nothing where the real ores are — only the scattered honeypot fakes.",
+    "HideRealOreAs": "Rock_Stone",
+
+    "//_PROTECTED_BLOCKS": "Second protection layer for valuable NON-ORE blocks (chests, custom/craft blocks): hide the buried ones from X-ray and scatter decoy honeypots.",
+    "//ProtectedBlocksEnabled": "Master switch for the protected-block layer.",
+    "ProtectedBlocksEnabled": true,
+    "//ProtectedBlocks": "Ids OR id-prefixes of valuable NON-CONTAINER blocks to hide from X-ray when fully enclosed (exact or startsWith). IMPORTANT: chests/containers can NOT be hidden here — they carry a block-entity whose model is sent on a separate channel, so swapping the block id leaves the chest poking through the rock. Block-entity blocks are auto-skipped (console warning). Protect chests via ProtectedDecoyPalette instead. Put plain valuable blocks here (e.g. metal/gem storage) once confirmed with the Probe tool. Empty by default.",
+    "ProtectedBlocks": [],
+    "//HideProtectedAs": "Real protected blocks are masked with THIS (plain rock) so X-ray sees nothing where they are.",
+    "HideProtectedAs": "Rock_Stone",
+    "//ProtectedDecoyPalette": "Decoy blocks scattered into buried rock as honeypots (exact ids — verify with the Probe tool). A cheater using X-ray sees 'buried loot' and digs to it, tripping the honeypot exactly like a fake ore. Empty list = hide only, no decoys.",
+    "ProtectedDecoyPalette": ["Furniture_Crude_Chest_Small"],
+    "//ProtectedDecoyChunkChance": "Chance (0..1) that an obfuscated 32x32x32 SECTION contains ONE buried decoy chest (never more than one per section). This controls the ACTUAL chest count, unlike a per-block density (there is far too much rock for that). The key name says Chunk for config compatibility, but the unit is a section — both obfuscation paths now work section by section. With ChunkRadius 6 and VerticalRadius 32 that is ~113 chunks x ~2.5 sections around a player, so 0.01 = a few buried chests in the whole area — a rare loot find, not a field. One is enough to catch an X-ray user. Raise for more, lower for fewer.",
+    "ProtectedDecoyChunkChance": 0.01
+  },
+
+  "Detection": {
+    "//": "Suspicion tracking. A honeypot hit = breaking a fully-enclosed fake ore (a legit player can't see enclosed blocks). Mining rate = tracked-ore breaks within the time window.",
+    "Enabled": true,
+    "//TrackedOres": "Valuable ores counted by the mining-rate heuristic. Entries are exact ids OR 'Prefix*' wildcards. Defaults auto-discover every valuable ore variant registered in your world (Copper/Iron left out so normal mining of the common metals doesn't false-flag). Add or narrow as you like.",
+    "TrackedOres": [
+      "Ore_Gold_*", "Ore_Silver_*", "Ore_Cobalt_*", "Ore_Mithril_*",
+      "Ore_Adamantite_*", "Ore_Thorium_*", "Ore_Onyxium_*", "Ore_Prisma"
+    ],
+    "RateWindowSeconds": 120,
+    "//RateFlagThreshold": "Tracked-ore breaks within the window at/above this flag the player.",
+    "RateFlagThreshold": 40,
+    "HoneypotHitWeight": 25.0,
+    "//HoneypotFlagThreshold": "Honeypot hits at/above this flag the player on their own.",
+    "HoneypotFlagThreshold": 4,
+    "ScoreDecayPerMinute": 0.15,
+    "AlertAdminsOnFlag": true
+  },
+
+  "Spectate": {
+    "//": "Live follow-camera used by the admin panel / '/antixray spectate <player>'.",
+    "CameraDistance": 4.0,
+    "//LerpSpeed": "Camera smoothing: a per-frame interpolation factor between 0 and 1 (vanilla uses 0.2). Higher = snappier. Values above 1 overshoot every frame and make the camera spin/flip, so they are clamped to 1.",
+    "LerpSpeed": 0.2,
+    "AllowPitchControls": true,
+    "//FirstPerson": "Start the spectate camera in first person (through the suspect's eyes) instead of third person. Either way you can flip between the two in-game with /ax → Tools → \"Camera view\".",
+    "FirstPerson": false,
+    "//FirstPersonForward": "First person only: how far in front of the suspect's eyes the camera sits, in blocks. 0 puts it inside their head; 0.45 is just past it. If the offset seems locked to a fixed world direction on your build, set 0.",
+    "FirstPersonForward": 0.45,
+    "//FollowYOffset": "The admin's body is teleported along with the suspect (the client needs it there to receive their chunks and entity). This parks it this many blocks BELOW them so the admin never sees his own character in frame. Chunks stream per column, so a vertical offset costs nothing. Set 0 to stand right on the suspect.",
+    "FollowYOffset": -18.0
+  }
+}

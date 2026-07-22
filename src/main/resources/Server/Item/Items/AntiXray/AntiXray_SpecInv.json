@@ -1,0 +1,16 @@
+{
+  "Parent": "Furniture_Crude_Torch",
+  "TranslationProperties": {
+    "Name": "antixray.items.AntiXray_SpecInv.name",
+    "Description": "antixray.items.AntiXray_SpecInv.description"
+  },
+  "MaxStack": 1,
+  "DropOnDeath": false,
+  "Categories": [
+    "Items.Weapons"
+  ],
+  "Interactions": {
+    "Primary": "Stick_Attack",
+    "Secondary": "Stick_Attack"
+  }
+}

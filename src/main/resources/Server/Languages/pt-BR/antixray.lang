@@ -1,0 +1,11 @@
+items.AntiXray_SpecNext.name = Próximo Suspeito
+items.AntiXray_SpecNext.description = Clique em qualquer lugar (até no ar) para levar a câmera ao próximo suspeito online.
+
+items.AntiXray_SpecView.name = Câmera
+items.AntiXray_SpecView.description = Clique em qualquer lugar para alternar entre primeira pessoa (os olhos do suspeito) e terceira pessoa.
+
+items.AntiXray_SpecInv.name = Inventário do Suspeito
+items.AntiXray_SpecInv.description = Clique em qualquer lugar para mostrar ou esconder o que o suspeito está carregando.
+
+items.AntiXray_SpecExit.name = Sair do Spectate
+items.AntiXray_SpecExit.description = Clique em qualquer lugar para soltar a câmera e voltar para onde você estava.

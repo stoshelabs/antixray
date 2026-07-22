@@ -1,0 +1,113 @@
+{
+    "general": {
+        "no_permission": "You don't have permission."
+    },
+    "panel": {
+        "title": "ANTI-XRAY",
+        "tab_suspects": "Suspects",
+        "tab_tools": "Tools",
+        "tab_status": "Status",
+        "close": "Close",
+        "refresh": "Refresh",
+        "suspects_subtitle": "Possible X-ray users (most suspicious first)",
+        "suspects_count": "Tracked: %n%",
+        "suspects_empty": "No suspects tracked yet.",
+        "row_spectate": "Spectate"
+    },
+    "tools": {
+        "title": "Admin tools",
+        "probe_on": "Probe: ON",
+        "probe_off": "Probe: OFF",
+        "probe_hint": "Shows the id of every block you break (to learn ore ids).",
+        "view_first": "Camera view: first person",
+        "view_third": "Camera view: third person",
+        "view_hint": "Flips the spectate camera between the suspect's eyes and a follow camera behind them. Applies live while spectating.",
+        "reload": "Reload config",
+        "reload_hint": "Re-read config.json and re-resolve block ids.",
+        "clear": "Clear all data",
+        "clear_hint": "Reset every player's suspicion data.",
+        "stopspec": "Stop spectating",
+        "stopspec_hint": "Detach the follow camera and return to normal.",
+        "test": "Test flash",
+        "test_hint": "Turns the blocks around you into fake ores for a few seconds (debug).",
+        "sim": "Flag online players",
+        "sim_hint": "Force-flags every online player so the alert, list and Spectate can be tested (debug).",
+        "traps": "Nearest traps",
+        "traps_hint": "Lists the honeypot coordinates armed in YOUR client view (debug).",
+        "audit": "X-ray audit (15s)",
+        "audit_hint": "Makes the rock around you see-through for YOU only, so you can verify the fake field reached your client (debug)."
+    },
+    "status": {
+        "title": "Status",
+        "obfuscation": "Obfuscation: %state%",
+        "detection": "Detection: %state%",
+        "fake_ores": "Fake-ore ids resolved: %n%",
+        "protected": "Protected blocks: %n% ids, %d% decoys",
+        "tracked": "Players tracked: %n%",
+        "worlds": "Active worlds: %worlds%",
+        "probe": "Your probe mode: %state%",
+        "spectating": "Spectating: %target%",
+        "not_spectating": "not spectating",
+        "on": "ON",
+        "off": "OFF",
+        "all_worlds": "all"
+    },
+    "row": {
+        "info": "%tag%%name%  score %score%  |  ores %ores%  |  honeypots %honeypots%",
+        "flagged": "[!] "
+    },
+    "msg": {
+        "spectating": "Spectating %player%. Open /antixray > Tools to stop.",
+        "spectate_stopped": "Spectator mode ended.",
+        "spectate_failed": "Couldn't spectate that player.",
+        "spectate_offline": "%player% is not online.",
+        "spectate_self": "You can't spectate yourself.",
+        "not_spectating": "You aren't spectating anyone.",
+        "reloaded": "AntiXray reloaded.",
+        "reload_failed": "Reload failed (see console).",
+        "cleared_all": "All suspicion data cleared.",
+        "probe_on": "Probe ENABLED. Break blocks to see their ids.",
+        "probe_off": "Probe disabled.",
+        "probe_hit": "probe: %block% (id %id%) @ %pos%",
+        "camera_missing": "Couldn't find the player's entity.",
+        "networkid_missing": "Player has no NetworkId — can't spectate.",
+        "spectate_target_left": "%player% went offline — spectating stopped, you're back where you were.",
+        "sim_done": "Force-flagged %n% online player(s).",
+        "traps_header": "Honeypots armed in your view: %n%",
+        "test_flash": "Test flash: %n% blocks for %secs%s.",
+        "test_reverted": "Test flash reverted.",
+        "audit_on": "X-ray audit on: %n% blocks see-through for %secs%s.",
+        "audit_off": "X-ray audit ended."
+    },
+    "alert": {
+        "possible_xray": "Possible X-ray: %player% (%ores% ores/window, %honeypots% honeypots)."
+    },
+    "hud": {
+        "title": "SPECTATING",
+        "target": "Watching: %player%",
+        "view_first": "View: first person",
+        "view_third": "View: third person",
+        "score": "Score %score%  •  ores %ores%  •  traps %honeypots%",
+        "no_score": "No detection data yet",
+        "keys": "HOTBAR TOOLS",
+        "key_stop": "9  —  stop spectating",
+        "key_view": "2  —  first/third person",
+        "key_next": "1  —  next suspect",
+        "key_inv": "3  —  open their inventory (take / drop)",
+        "inv_title": "%player%'s items",
+        "inv_empty": "(carrying nothing)"
+    },
+    "inv": {
+        "title": "SUSPECT INVENTORY",
+        "subtitle": "%player% is carrying %n% stack(s)",
+        "empty": "Carrying nothing.",
+        "refresh": "Refresh",
+        "take": "Take (evidence)",
+        "drop": "Drop",
+        "row": "%qty%x %item%   (%where%)",
+        "taken": "Confiscated %qty%x %item% from %player% — it is in your inventory (after you stop spectating).",
+        "dropped": "Destroyed %qty%x %item% from %player%'s inventory.",
+        "moved": "That stack moved before the click — nothing was taken. Refresh and try again.",
+        "offline": "%player% is offline."
+    }
+}

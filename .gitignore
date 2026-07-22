@@ -1,0 +1,23 @@
+# Build output
+build/
+.gradle/
+bin/
+out/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# OS
+.DS_Store
+
+# Internal planning
+ROADMAP.md
+CHANGELOG.md
+OREBFUSCATOR-NOTES.md
+
+# Docs (VitePress)
+docs/node_modules/
+docs/.vitepress/dist/
+docs/.vitepress/cache/

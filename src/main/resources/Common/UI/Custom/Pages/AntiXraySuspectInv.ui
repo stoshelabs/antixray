@@ -1,0 +1,42 @@
+// Suspect inventory viewer: one row per carried stack, with Take (confiscate as evidence) and Drop
+// (destroy) buttons. Ids stay in sync with SuspectInventoryPage.java. Same widget library as the admin panel.
+$C = "../AntiXrayUI.ui";
+$Sounds = "../AntiXraySounds.ui";
+
+$C.@PageOverlay {}
+
+$C.@Container #InvRoot {
+  Anchor: (Width: 700, Height: 520);
+
+  #Title {
+    $C.@Title #InvTitle { @Text = "SUSPECT INVENTORY"; }
+  }
+
+  #Content {
+    LayoutMode: Top;
+
+    Label #InvSubtitle { Anchor: (Horizontal: 0, Height: 18, Bottom: 4); Style: (...$C.@DefaultLabelStyle, FontSize: 12, TextColor: #b2c1d0); Text: ""; }
+    Label #InvEmpty { Anchor: (Horizontal: 0, Height: 18, Bottom: 6); Style: (...$C.@DefaultLabelStyle, FontSize: 12, TextColor: #d6a6a6); Text: ""; Visible: false; }
+
+    Group { Anchor: (Horizontal: 0, Bottom: 8); FlexWeight: 1; LayoutMode: TopScrolling; ScrollbarStyle: $C.@DefaultScrollbarStyle;
+      Group #InvRow0 { Anchor: (Height: 32, Horizontal: 0, Bottom: 4); LayoutMode: Left; Background: (Color: #2a1d1d); Padding: (Left: 12, Right: 10); Visible: false; Label #InvName0 { Anchor: (Height: 18, Vertical: 0); FlexWeight: 1; Style: (...$C.@DefaultLabelStyle, FontSize: 12, TextColor: #ffffff, VerticalAlignment: Center); Text: ""; } Group { Anchor: (Width: 6); } $C.@SmallSecondaryTextButton #BtnTake0 { @Anchor = (Width: 110, Height: 26); Text: "Take"; } Group { Anchor: (Width: 4); } $C.@SmallSecondaryTextButton #BtnDrop0 { @Anchor = (Width: 90, Height: 26); Text: "Drop"; } }
+      Group #InvRow1 { Anchor: (Height: 32, Horizontal: 0, Bottom: 4); LayoutMode: Left; Background: (Color: #2a1d1d); Padding: (Left: 12, Right: 10); Visible: false; Label #InvName1 { Anchor: (Height: 18, Vertical: 0); FlexWeight: 1; Style: (...$C.@DefaultLabelStyle, FontSize: 12, TextColor: #ffffff, VerticalAlignment: Center); Text: ""; } Group { Anchor: (Width: 6); } $C.@SmallSecondaryTextButton #BtnTake1 { @Anchor = (Width: 110, Height: 26); Text: "Take"; } Group { Anchor: (Width: 4); } $C.@SmallSecondaryTextButton #BtnDrop1 { @Anchor = (Width: 90, Height: 26); Text: "Drop"; } }
+      Group #InvRow2 { Anchor: (Height: 32, Horizontal: 0, Bottom: 4); LayoutMode: Left; Background: (Color: #2a1d1d); Padding: (Left: 12, Right: 10); Visible: false; Label #InvName2 { Anchor: (Height: 18, Vertical: 0); FlexWeight: 1; Style: (...$C.@DefaultLabelStyle, FontSize: 12, TextColor: #ffffff, VerticalAlignment: Center); Text: ""; } Group { Anchor: (Width: 6); } $C.@SmallSecondaryTextButton #BtnTake2 { @Anchor = (Width: 110, Height: 26); Text: "Take"; } Group { Anchor: (Width: 4); } $C.@SmallSecondaryTextButton #BtnDrop2 { @Anchor = (Width: 90, Height: 26); Text: "Drop"; } }
+      Group #InvRow3 { Anchor: (Height: 32, Horizontal: 0, Bottom: 4); LayoutMode: Left; Background: (Color: #2a1d1d); Padding: (Left: 12, Right: 10); Visible: false; Label #InvName3 { Anchor: (Height: 18, Vertical: 0); FlexWeight: 1; Style: (...$C.@DefaultLabelStyle, FontSize: 12, TextColor: #ffffff, VerticalAlignment: Center); Text: ""; } Group { Anchor: (Width: 6); } $C.@SmallSecondaryTextButton #BtnTake3 { @Anchor = (Width: 110, Height: 26); Text: "Take"; } Group { Anchor: (Width: 4); } $C.@SmallSecondaryTextButton #BtnDrop3 { @Anchor = (Width: 90, Height: 26); Text: "Drop"; } }
+      Group #InvRow4 { Anchor: (Height: 32, Horizontal: 0, Bottom: 4); LayoutMode: Left; Background: (Color: #2a1d1d); Padding: (Left: 12, Right: 10); Visible: false; Label #InvName4 { Anchor: (Height: 18, Vertical: 0); FlexWeight: 1; Style: (...$C.@DefaultLabelStyle, FontSize: 12, TextColor: #ffffff, VerticalAlignment: Center); Text: ""; } Group { Anchor: (Width: 6); } $C.@SmallSecondaryTextButton #BtnTake4 { @Anchor = (Width: 110, Height: 26); Text: "Take"; } Group { Anchor: (Width: 4); } $C.@SmallSecondaryTextButton #BtnDrop4 { @Anchor = (Width: 90, Height: 26); Text: "Drop"; } }
+      Group #InvRow5 { Anchor: (Height: 32, Horizontal: 0, Bottom: 4); LayoutMode: Left; Background: (Color: #2a1d1d); Padding: (Left: 12, Right: 10); Visible: false; Label #InvName5 { Anchor: (Height: 18, Vertical: 0); FlexWeight: 1; Style: (...$C.@DefaultLabelStyle, FontSize: 12, TextColor: #ffffff, VerticalAlignment: Center); Text: ""; } Group { Anchor: (Width: 6); } $C.@SmallSecondaryTextButton #BtnTake5 { @Anchor = (Width: 110, Height: 26); Text: "Take"; } Group { Anchor: (Width: 4); } $C.@SmallSecondaryTextButton #BtnDrop5 { @Anchor = (Width: 90, Height: 26); Text: "Drop"; } }
+      Group #InvRow6 { Anchor: (Height: 32, Horizontal: 0, Bottom: 4); LayoutMode: Left; Background: (Color: #2a1d1d); Padding: (Left: 12, Right: 10); Visible: false; Label #InvName6 { Anchor: (Height: 18, Vertical: 0); FlexWeight: 1; Style: (...$C.@DefaultLabelStyle, FontSize: 12, TextColor: #ffffff, VerticalAlignment: Center); Text: ""; } Group { Anchor: (Width: 6); } $C.@SmallSecondaryTextButton #BtnTake6 { @Anchor = (Width: 110, Height: 26); Text: "Take"; } Group { Anchor: (Width: 4); } $C.@SmallSecondaryTextButton #BtnDrop6 { @Anchor = (Width: 90, Height: 26); Text: "Drop"; } }
+      Group #InvRow7 { Anchor: (Height: 32, Horizontal: 0, Bottom: 4); LayoutMode: Left; Background: (Color: #2a1d1d); Padding: (Left: 12, Right: 10); Visible: false; Label #InvName7 { Anchor: (Height: 18, Vertical: 0); FlexWeight: 1; Style: (...$C.@DefaultLabelStyle, FontSize: 12, TextColor: #ffffff, VerticalAlignment: Center); Text: ""; } Group { Anchor: (Width: 6); } $C.@SmallSecondaryTextButton #BtnTake7 { @Anchor = (Width: 110, Height: 26); Text: "Take"; } Group { Anchor: (Width: 4); } $C.@SmallSecondaryTextButton #BtnDrop7 { @Anchor = (Width: 90, Height: 26); Text: "Drop"; } }
+      Group #InvRow8 { Anchor: (Height: 32, Horizontal: 0, Bottom: 4); LayoutMode: Left; Background: (Color: #2a1d1d); Padding: (Left: 12, Right: 10); Visible: false; Label #InvName8 { Anchor: (Height: 18, Vertical: 0); FlexWeight: 1; Style: (...$C.@DefaultLabelStyle, FontSize: 12, TextColor: #ffffff, VerticalAlignment: Center); Text: ""; } Group { Anchor: (Width: 6); } $C.@SmallSecondaryTextButton #BtnTake8 { @Anchor = (Width: 110, Height: 26); Text: "Take"; } Group { Anchor: (Width: 4); } $C.@SmallSecondaryTextButton #BtnDrop8 { @Anchor = (Width: 90, Height: 26); Text: "Drop"; } }
+      Group #InvRow9 { Anchor: (Height: 32, Horizontal: 0, Bottom: 4); LayoutMode: Left; Background: (Color: #2a1d1d); Padding: (Left: 12, Right: 10); Visible: false; Label #InvName9 { Anchor: (Height: 18, Vertical: 0); FlexWeight: 1; Style: (...$C.@DefaultLabelStyle, FontSize: 12, TextColor: #ffffff, VerticalAlignment: Center); Text: ""; } Group { Anchor: (Width: 6); } $C.@SmallSecondaryTextButton #BtnTake9 { @Anchor = (Width: 110, Height: 26); Text: "Take"; } Group { Anchor: (Width: 4); } $C.@SmallSecondaryTextButton #BtnDrop9 { @Anchor = (Width: 90, Height: 26); Text: "Drop"; } }
+      Group #InvRow10 { Anchor: (Height: 32, Horizontal: 0, Bottom: 4); LayoutMode: Left; Background: (Color: #2a1d1d); Padding: (Left: 12, Right: 10); Visible: false; Label #InvName10 { Anchor: (Height: 18, Vertical: 0); FlexWeight: 1; Style: (...$C.@DefaultLabelStyle, FontSize: 12, TextColor: #ffffff, VerticalAlignment: Center); Text: ""; } Group { Anchor: (Width: 6); } $C.@SmallSecondaryTextButton #BtnTake10 { @Anchor = (Width: 110, Height: 26); Text: "Take"; } Group { Anchor: (Width: 4); } $C.@SmallSecondaryTextButton #BtnDrop10 { @Anchor = (Width: 90, Height: 26); Text: "Drop"; } }
+      Group #InvRow11 { Anchor: (Height: 32, Horizontal: 0, Bottom: 4); LayoutMode: Left; Background: (Color: #2a1d1d); Padding: (Left: 12, Right: 10); Visible: false; Label #InvName11 { Anchor: (Height: 18, Vertical: 0); FlexWeight: 1; Style: (...$C.@DefaultLabelStyle, FontSize: 12, TextColor: #ffffff, VerticalAlignment: Center); Text: ""; } Group { Anchor: (Width: 6); } $C.@SmallSecondaryTextButton #BtnTake11 { @Anchor = (Width: 110, Height: 26); Text: "Take"; } Group { Anchor: (Width: 4); } $C.@SmallSecondaryTextButton #BtnDrop11 { @Anchor = (Width: 90, Height: 26); Text: "Drop"; } }
+    }
+
+    Group { Anchor: (Horizontal: 0, Height: 36); LayoutMode: Left;
+      $C.@SecondaryTextButton #BtnInvRefresh { @Anchor = (Width: 200, Height: 34); Text: "Refresh"; }
+      Group { FlexWeight: 1; }
+      $C.@SecondaryTextButton #BtnInvClose { @Sounds = $Sounds.@ButtonsCancel; @Anchor = (Width: 160, Height: 34); Text: "Close"; }
+    }
+  }
+}

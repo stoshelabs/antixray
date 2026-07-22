@@ -1,0 +1,131 @@
+package dev.stoshe.antixray.manager;
+
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+import dev.stoshe.antixray.util.Console;
+
+import javax.annotation.Nonnull;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.lang.reflect.Type;
+import java.nio.file.Files;
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * Loads translations from bundled {@code /lang/*.json} resources, exporting them to the data folder on first
+ * run and overlaying any user edits on top. English ({@code en_us}) is always loaded as the default base, then
+ * the configured language is overlaid. Nested JSON is flattened into dotted keys.
+ */
+public class TranslationManager {
+    private final Map<String, String> translations = new HashMap<>();
+    private String language;
+    private final Gson gson = new Gson();
+    private final File langDir;
+
+    public TranslationManager(@Nonnull File dataDir, @Nonnull String language) {
+        this.langDir = new File(dataDir, "lang");
+        this.language = language == null ? "en_us" : language.toLowerCase();
+        if (!langDir.exists()) {
+            langDir.mkdirs();
+        }
+        exportDefaultLanguages();
+        load();
+    }
+
+    public synchronized void reload(String language) {
+        if (language != null && !language.isBlank()) {
+            this.language = language.toLowerCase();
+        }
+        translations.clear();
+        exportDefaultLanguages();
+        load();
+    }
+
+    private void load() {
+        loadLanguage("en_us");
+        if (!"en_us".equals(language)) {
+            loadLanguage(language);
+        }
+    }
+
+    private void exportDefaultLanguages() {
+        exportResource("en_us.json");
+        exportResource("pt_br.json");
+    }
+
+    private void exportResource(String name) {
+        File target = new File(langDir, name);
+        if (target.exists()) {
+            return;
+        }
+        try (InputStream is = getClass().getResourceAsStream("/lang/" + name)) {
+            if (is != null) {
+                Files.copy(is, target.toPath());
+            }
+        } catch (Exception e) {
+            Console.error("Failed to export " + name + ": " + e.getMessage());
+        }
+    }
+
+    private void loadLanguage(String lang) {
+        String fileName = lang + ".json";
+        File file = new File(langDir, fileName);
+        try (InputStream bundled = getClass().getResourceAsStream("/lang/" + fileName)) {
+            loadFromStream(bundled);
+        } catch (Exception e) {
+            Console.error("Failed to load bundled language " + lang + ": " + e.getMessage());
+        }
+        if (file.exists()) {
+            try (InputStream custom = new FileInputStream(file)) {
+                loadFromStream(custom);
+            } catch (Exception e) {
+                Console.error("Failed to load custom language " + lang + ": " + e.getMessage());
+            }
+        }
+    }
+
+    private void loadFromStream(InputStream is) {
+        if (is == null) {
+            return;
+        }
+        Type type = new TypeToken<Map<String, Object>>() {
+        }.getType();
+        Map<String, Object> loaded = gson.fromJson(new InputStreamReader(is), type);
+        if (loaded != null) {
+            flattenAndPut("", loaded);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private void flattenAndPut(String prefix, Map<String, Object> map) {
+        for (Map.Entry<String, Object> entry : map.entrySet()) {
+            String key = prefix.isEmpty() ? entry.getKey() : prefix + "." + entry.getKey();
+            Object value = entry.getValue();
+            if (value instanceof Map) {
+                flattenAndPut(key, (Map<String, Object>) value);
+            } else {
+                translations.put(key, String.valueOf(value));
+            }
+        }
+    }
+
+    @Nonnull
+    public String get(@Nonnull String key) {
+        String value = translations.get(key);
+        return value != null ? value : key;
+    }
+
+    @Nonnull
+    public String get(@Nonnull String key, Object... args) {
+        String text = get(key);
+        for (int i = 0; i + 1 < args.length; i += 2) {
+            String placeholder = "%" + args[i] + "%";
+            Object argValue = args[i + 1];
+            text = text.replace(placeholder, argValue != null ? String.valueOf(argValue) : "null");
+        }
+        return text;
+    }
+}

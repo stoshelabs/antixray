@@ -1,0 +1,127 @@
+/* ============================================================
+   AntiXray docs theme — brand colours + a colourful home.
+   Palette follows the wordmark: diamond teal → protective violet.
+   ============================================================ */
+
+/* ---- Brand palette (AntiXray teal → violet) ---------------- */
+:root {
+  --vp-c-brand-1: #0f9e92;
+  --vp-c-brand-2: #12b3a6;
+  --vp-c-brand-3: #16c4b4;
+  --vp-c-brand-soft: rgba(18, 179, 166, 0.14);
+
+  --vp-button-brand-bg: #12b3a6;
+  --vp-button-brand-hover-bg: #16c4b4;
+  --vp-button-brand-active-bg: #0f9e92;
+  --vp-button-brand-border: transparent;
+  --vp-button-brand-hover-border: transparent;
+  --vp-button-brand-active-border: transparent;
+  --vp-button-brand-text: #ffffff;
+
+  /* Teal→violet used for hero accents (matches the wordmark). */
+  --ax-brandgrad: linear-gradient(120deg, #35e0d0 8%, #22b6d6 40%, #4b6bf0 72%, #6b2beb 96%);
+}
+.dark {
+  --vp-c-brand-1: #43d9c9;
+  --vp-c-brand-2: #35e0d0;
+  --vp-c-brand-3: #16c4b4;
+  --vp-c-brand-soft: rgba(53, 224, 208, 0.16);
+}
+
+/* ---- Gradient brand buttons -------------------------------- */
+.VPButton.brand {
+  background-image: linear-gradient(120deg, #12b3a6 0%, #6b2beb 100%);
+  border: none !important;
+  transition: filter 0.2s ease, transform 0.2s ease;
+}
+.VPButton.brand:hover {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+}
+
+/* ============================================================
+   HOME HERO — logo IS the title: stacked above the tagline,
+   centered, at natural size. Overrides VitePress' default
+   right-side absolutely-positioned hero image.
+   ============================================================ */
+.VPHero.has-image .container {
+  flex-direction: column !important;
+  align-items: center !important;
+  text-align: center !important;
+}
+.VPHero .main {
+  order: 1 !important;
+  max-width: 720px;
+  margin: 0 auto !important;
+}
+.VPHero.has-image .tagline {
+  margin: 0 auto !important;
+}
+.VPHero.has-image .actions {
+  justify-content: center !important;
+}
+.VPHero .image {
+  order: -1 !important;                 /* logo sits above the text */
+  margin: 0 auto 1.75rem auto !important; /* centered, no negative margins */
+  max-width: 100% !important;
+}
+.VPHero .image-container {
+  position: static !important;
+  margin: 0 auto !important;
+  width: auto !important;
+  height: auto !important;
+  max-width: 100% !important;
+  transform: none !important;
+}
+.VPHero .image-bg {
+  display: none !important;          /* the blurred blob behind the image */
+}
+.VPHero .image-src {
+  position: static !important;       /* default is absolute inside a fixed box */
+  transform: none !important;
+  width: auto !important;
+  max-width: min(100%, 520px) !important;
+  max-height: none !important;
+  filter: drop-shadow(0 12px 40px rgba(18, 179, 166, 0.30));
+}
+
+/* ============================================================
+   FEATURE CARDS — a teal→violet spread matching the logo, with
+   a coloured top bar, tinted icon tile, and a lift on hover.
+   ============================================================ */
+.VPFeatures .items .item .VPFeature {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--vp-c-divider);
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+.VPFeatures .items .item .VPFeature:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.14);
+  border-color: transparent;
+}
+.VPFeatures .items .item .VPFeature::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--ax-accent, var(--vp-c-brand-1));
+}
+.VPFeatures .items .item .VPFeature .icon {
+  background: var(--ax-accent-soft, var(--vp-c-brand-soft)) !important;
+  border-radius: 10px;
+}
+
+.VPFeatures .items .item:nth-child(6n + 1) .VPFeature { --ax-accent: #2fd3c4; --ax-accent-soft: rgba(47, 211, 196, 0.16); }
+.VPFeatures .items .item:nth-child(6n + 2) .VPFeature { --ax-accent: #22b6d6; --ax-accent-soft: rgba(34, 182, 214, 0.16); }
+.VPFeatures .items .item:nth-child(6n + 3) .VPFeature { --ax-accent: #2b8fff; --ax-accent-soft: rgba(43, 143, 255, 0.16); }
+.VPFeatures .items .item:nth-child(6n + 4) .VPFeature { --ax-accent: #4b6bf0; --ax-accent-soft: rgba(75, 107, 240, 0.16); }
+.VPFeatures .items .item:nth-child(6n + 5) .VPFeature { --ax-accent: #7b3ff2; --ax-accent-soft: rgba(123, 63, 242, 0.16); }
+.VPFeatures .items .item:nth-child(6n + 6) .VPFeature { --ax-accent: #a24bd6; --ax-accent-soft: rgba(162, 75, 214, 0.16); }
+
+/* Friendlier feature titles */
+.VPFeatures .items .item .VPFeature .title {
+  font-weight: 700;
+}
