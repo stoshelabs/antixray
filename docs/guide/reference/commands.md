@@ -27,6 +27,7 @@ Tracked players, most-suspicious first. Each row shows score, tracked-ore count,
 | --- | --- |
 | **Probe: ON/OFF** | Toggle probe mode — prints the id of every block **you** break, to learn ore ids. See [Block IDs & Probe](/guide/setup/block-ids). |
 | **Reload config** | Re-read `config.json` and re-resolve block ids without a restart. |
+| **What's new** | Re-open the [release-notes popup](/guide/protection/spectate#update-check-release-notes). Appears once the notes have been fetched from GitHub. |
 | **Clear all data** | Reset every player's suspicion data. |
 | **Camera view** | Flip the spectate camera between first and third person. Applies live. |
 | **Stop spectating** | Detach your follow-camera and return to normal. |

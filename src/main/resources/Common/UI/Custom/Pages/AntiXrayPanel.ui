@@ -72,6 +72,8 @@ $C.@Container #AdminRoot {
         Label #HintAudit { Anchor: (Horizontal: 0, Height: 16, Bottom: 10); Style: (...$C.@DefaultLabelStyle, FontSize: 11, TextColor: #8ea0b2); Text: ""; Visible: false; }
         $C.@SecondaryTextButton #BtnReload { @Anchor = (Horizontal: 0, Height: 34, Bottom: 2); Text: "Reload"; }
         Label #HintReload { Anchor: (Horizontal: 0, Height: 16, Bottom: 10); Style: (...$C.@DefaultLabelStyle, FontSize: 11, TextColor: #8ea0b2); Text: ""; }
+        $C.@SecondaryTextButton #BtnChangelog { @Anchor = (Horizontal: 0, Height: 34, Bottom: 2); Text: "What's new"; Visible: false; }
+        Label #HintChangelog { Anchor: (Horizontal: 0, Height: 16, Bottom: 10); Style: (...$C.@DefaultLabelStyle, FontSize: 11, TextColor: #8ea0b2); Text: ""; Visible: false; }
         $C.@SecondaryTextButton #BtnView { @Anchor = (Horizontal: 0, Height: 34, Bottom: 2); Text: "Camera view"; }
         Label #HintView { Anchor: (Horizontal: 0, Height: 16, Bottom: 10); Style: (...$C.@DefaultLabelStyle, FontSize: 11, TextColor: #8ea0b2); Text: ""; }
         $C.@SecondaryTextButton #BtnStopSpec { @Anchor = (Horizontal: 0, Height: 34, Bottom: 2); Text: "Stop spectating"; }

@@ -2,6 +2,10 @@
 
 All notable changes to AntiXray. Dates are in UTC. The docs always describe the **current** release.
 
+## Unreleased
+
+- **Update check & release notes.** On startup AntiXray asks GitHub whether a newer release exists, printing a banner at the end of the boot log and telling admins in chat shortly after they join. Admins also get a **"What's new"** popup with the current release's notes, shown once per release, with *Close* and *Don't show until next version*. Re-open it any time from **Tools → What's new**. Every lookup is async with a 5s timeout and fails silently, so an offline server sees nothing at all.
+
 ## 1.0.0
 
 Initial release.

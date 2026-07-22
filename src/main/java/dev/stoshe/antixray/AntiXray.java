@@ -52,6 +52,8 @@ public class AntiXray extends JavaPlugin {
     private DetectionManager detectionManager;
     private SpectateManager spectateManager;
     private dev.stoshe.antixray.manager.SuspectInventory suspectInventory;
+    private dev.stoshe.antixray.manager.ChangelogManager changelogManager;
+    private dev.stoshe.antixray.system.UpdateNotificationSystem updateNotificationSystem;
     private final dev.stoshe.antixray.net.PacketDiagnostics packetDiagnostics =
             new dev.stoshe.antixray.net.PacketDiagnostics();
 
@@ -81,10 +83,16 @@ public class AntiXray extends JavaPlugin {
         this.detectionManager = new DetectionManager(this);
         this.spectateManager = new SpectateManager(this);
         this.suspectInventory = new dev.stoshe.antixray.manager.SuspectInventory(spectateManager.getVault());
+        this.changelogManager = new dev.stoshe.antixray.manager.ChangelogManager(dataDir);
 
         registerSystems();
         registerCommands();
         registerListeners();
+
+        // Async GitHub lookups: the "update available" banner (announced after boot) and the release notes
+        // behind the admin "what's new" popup. Both fail silently when offline.
+        checkForUpdates();
+        changelogManager.fetch(getVersion());
 
         Console.success("AntiXray enabled.");
     }
@@ -121,6 +129,8 @@ public class AntiXray extends JavaPlugin {
 
     private void registerSystems() {
         getEntityStoreRegistry().registerSystem(new OreBreakSystem(this));
+        this.updateNotificationSystem = new dev.stoshe.antixray.system.UpdateNotificationSystem(this);
+        getEntityStoreRegistry().registerSystem(this.updateNotificationSystem);
     }
 
     private void registerCommands() {
@@ -141,6 +151,12 @@ public class AntiXray extends JavaPlugin {
                     this::onMouseButton);
         } catch (Exception e) {
             Console.warning("Failed to register mouse listener: " + e.getMessage());
+        }
+        try {
+            getEventRegistry().register(
+                    com.hypixel.hytale.server.core.event.events.BootEvent.class, this::onBoot);
+        } catch (Exception e) {
+            Console.warning("Failed to register boot listener: " + e.getMessage());
         }
     }
 
@@ -185,6 +201,67 @@ public class AntiXray extends JavaPlugin {
         }
         if (spectateManager != null) {
             spectateManager.handleDisconnect(pr);
+        }
+        if (updateNotificationSystem != null) {
+            updateNotificationSystem.forget(uuid);
+        }
+    }
+
+    // ------------------------------------------------------------------ update check / changelog
+
+    private volatile String latestVersion;
+    private volatile boolean booted;
+    private volatile boolean updateChecked;
+    private volatile boolean updateAnnounced;
+
+    /** Latest release found on GitHub (null until the async check finishes / if it failed). */
+    public String getLatestVersion() {
+        return latestVersion;
+    }
+
+    public boolean isUpdateAvailable() {
+        return dev.stoshe.antixray.util.UpdateChecker.isNewerVersion(getVersion(), latestVersion);
+    }
+
+    /**
+     * Async GitHub check on startup. The result is announced by {@link #maybeAnnounceUpdate()} — deferred
+     * until the server has finished booting so the "update available" banner lands at the very END of the
+     * boot log where it's actually visible, not buried mid-startup.
+     */
+    private void checkForUpdates() {
+        dev.stoshe.antixray.util.UpdateChecker.checkForUpdates().thenAccept(latest -> {
+            this.latestVersion = latest;
+            this.updateChecked = true;
+            maybeAnnounceUpdate();
+        });
+    }
+
+    /** Fired when the server finishes booting; lets the update banner print last (see checkForUpdates). */
+    private void onBoot(com.hypixel.hytale.server.core.event.events.BootEvent event) {
+        this.booted = true;
+        maybeAnnounceUpdate();
+    }
+
+    /**
+     * Prints the update result once — and only once BOTH the async check has returned AND the server has
+     * booted, so the banner is the last thing in the startup log. Whichever of the two finishes last triggers
+     * it.
+     */
+    private synchronized void maybeAnnounceUpdate() {
+        if (updateAnnounced || !booted || !updateChecked) {
+            return;
+        }
+        updateAnnounced = true;
+        String latest = this.latestVersion;
+        if (dev.stoshe.antixray.util.UpdateChecker.isNewerVersion(getVersion(), latest)) {
+            // Gold high-visibility banner (colour 220), same terminal treatment as the boot banner.
+            Console.banner(220,
+                    ">>  AntiXray UPDATE AVAILABLE",
+                    "",
+                    "    You have  v" + getVersion() + "   ->   latest is  v" + latest,
+                    "    Download:  " + dev.stoshe.antixray.util.UpdateChecker.RELEASES_URL);
+        } else if (latest != null) {
+            Console.success("You are running the latest version (" + getVersion() + ").");
         }
     }
 
@@ -385,6 +462,10 @@ public class AntiXray extends JavaPlugin {
 
     public dev.stoshe.antixray.manager.SuspectInventory getSuspectInventory() {
         return suspectInventory;
+    }
+
+    public dev.stoshe.antixray.manager.ChangelogManager getChangelogManager() {
+        return changelogManager;
     }
 
     public SpectateManager getSpectateManager() {

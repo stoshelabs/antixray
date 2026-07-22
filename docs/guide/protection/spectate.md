@@ -79,9 +79,25 @@ Maintenance actions, each a single button:
 | --- | --- |
 | **Probe: ON/OFF** | Toggles probe mode. While on, every block **you** break prints its exact id in chat — used to fill `FakeOrePalette` / `TrackedOres`. See [Block IDs & Probe](/guide/setup/block-ids). |
 | **Reload config** | Re-reads `config.json` and re-resolves all block ids without a restart. |
+| **What's new** | Re-opens the release-notes popup (below). Only appears once the notes have been fetched. |
 | **Clear all data** | Resets every player's suspicion data back to zero. |
 | **Camera view** | Flips the spectate camera between first and third person. Applies live. |
 | **Stop spectating** | Detaches your follow camera. |
+
+### Update check & release notes
+
+On startup AntiXray asks GitHub whether a newer release exists. If there is one, a banner is printed at the **end** of the boot log (where it's actually visible), and admins are told in chat a few seconds after they join.
+
+Admins also get a **"What's new"** popup with the release notes for the version they're running, shown once per release. It has two buttons:
+
+- **Close** — dismisses it for now; you'll see it again next time you join.
+- **Don't show until next version** — dismisses it for good, until a newer release ships. Stored per-admin in `changelog_seen.json`.
+
+Re-open it any time from **Tools → What's new**.
+
+::: info Offline is fine
+Every one of these lookups is asynchronous with a 5-second timeout and fails silently. If your server has no outbound internet, or GitHub rate-limits it, nothing is printed and the popup simply never appears — no errors and no startup delay.
+:::
 
 ### Debug tools
 

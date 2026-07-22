@@ -139,6 +139,10 @@ public class AntiXrayPanelPage extends InteractiveCustomUIPage<AntiXrayPanelPage
             toolButton(cb, eb, "Audit", Tr.t("tools.audit"), Tr.t("tools.audit_hint"), "Audit");
         }
         toolButton(cb, eb, "Reload", Tr.t("tools.reload"), Tr.t("tools.reload_hint"), "Reload");
+        // Only offered once the GitHub fetch has landed — there is nothing to show otherwise.
+        if (plugin.getChangelogManager() != null && plugin.getChangelogManager().isReady()) {
+            toolButton(cb, eb, "Changelog", Tr.t("tools.changelog"), Tr.t("tools.changelog_hint"), "Changelog");
+        }
         toolButton(cb, eb, "Clear", Tr.t("tools.clear"), Tr.t("tools.clear_hint"), "Clear");
         boolean fp = plugin.getSpectateManager().isFirstPerson(playerRef.getUuid());
         toolButton(cb, eb, "View", Tr.t(fp ? "tools.view_first" : "tools.view_third"),
@@ -184,6 +188,14 @@ public class AntiXrayPanelPage extends InteractiveCustomUIPage<AntiXrayPanelPage
             case "TabTools" -> open(player, ref, store, playerRef, plugin, Tab.TOOLS);
             case "TabStatus" -> open(player, ref, store, playerRef, plugin, Tab.STATUS);
             case "Refresh" -> open(player, ref, store, playerRef, plugin, Tab.SUSPECTS);
+            case "Changelog" -> {
+                if (plugin.getChangelogManager() != null && plugin.getChangelogManager().isReady()) {
+                    ChangelogPage.open(player, ref, store, playerRef, plugin);
+                } else {
+                    playerRef.sendMessage(ChatUtil.error(Tr.t("changelog.unavailable")));
+                    player.getPageManager().setPage(ref, store, Page.None);
+                }
+            }
             case "Spectate" -> {
                 int idx = parseIndex(data.param);
                 if (idx >= 0 && idx < displayed.size()) {
