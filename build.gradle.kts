@@ -8,7 +8,7 @@ plugins {
 group = "dev.stoshe.antixray"
 val pluginVersion = (findProperty("version") as? String)
     ?.takeIf { it.isNotBlank() && it != "unspecified" }
-    ?: "1.0.0"
+    ?: "1.1.0"
 version = pluginVersion
 
 val javaVersion = (findProperty("javaVersion") as? String) ?: "25"

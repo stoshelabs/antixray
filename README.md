@@ -9,7 +9,7 @@
 
 <p align="center">
   <a href="https://stoshelabs.github.io/antixray/"><img src="https://img.shields.io/badge/docs-online-6B2BEB?style=for-the-badge" alt="Documentation"></a>
-  <img src="https://img.shields.io/badge/version-1.0.0-2ea44f?style=for-the-badge" alt="version 1.0.0">
+  <img src="https://img.shields.io/badge/version-1.1.0-2ea44f?style=for-the-badge" alt="version 1.1.0">
   <img src="https://img.shields.io/badge/Hytale-server%20plugin-12B3A6?style=for-the-badge" alt="Hytale server plugin">
 </p>
 
@@ -43,7 +43,7 @@ honest players never see or feel a thing.
 
 ## Quick start
 
-1. Drop `AntiXray-1.0.0.jar` into your server's `mods/` folder.
+1. Drop `AntiXray-1.1.0.jar` into your server's `mods/` folder.
 2. Start the server once to generate `config.json` and the language files.
 3. Run `/antixray` (alias `/ax`) and check **Status → Fake-ore ids resolved** is greater than `0`.
 

@@ -2,9 +2,15 @@
 
 All notable changes to AntiXray. Dates are in UTC. The docs always describe the **current** release.
 
-## Unreleased
+## 1.1.0
 
-- **Update check & release notes.** On startup AntiXray asks GitHub whether a newer release exists, printing a banner at the end of the boot log and telling admins in chat shortly after they join. Admins also get a **"What's new"** popup with the current release's notes, shown once per release, with *Close* and *Don't show until next version*. Re-open it any time from **Tools → What's new**. Every lookup is async with a 5s timeout and fails silently, so an offline server sees nothing at all.
+- **Update check.** On startup AntiXray asks GitHub whether a newer release exists. If there is one, a banner is printed at the **end** of the boot log — where it's actually visible rather than buried mid-startup — and admins are told in chat a few seconds after they join.
+- **"What's new" popup.** Admins get the release notes for the version they're running, shown once per release, with **Close** (see it again next join) and **Don't show until next version** (persisted per admin in `changelog_seen.json`). Re-open it any time from **Tools → What's new**.
+- Both lookups are asynchronous with a 5-second timeout and fail silently, so a server with no outbound internet — or one GitHub rate-limits — sees nothing at all: no errors, no startup delay, and no popup.
+
+::: tip Upgrading from 1.0.0
+The update check ships *in* this release, so 1.0.0 servers can't announce it — 1.1.0 is the first version that will tell you about future releases.
+:::
 
 ## 1.0.0
 

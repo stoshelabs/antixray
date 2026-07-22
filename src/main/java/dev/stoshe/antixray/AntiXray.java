@@ -39,7 +39,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class AntiXray extends JavaPlugin {
 
-    private static final String VERSION = "1.0.0";
+    private static final String VERSION = "1.1.0";
     private static AntiXray instance;
 
     private File dataDir;

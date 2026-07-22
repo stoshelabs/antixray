@@ -4,9 +4,9 @@ AntiXray is a drop-in JAR. Install it, confirm one number in the Status tab, and
 
 ## 1. Install
 
-1. Drop `AntiXray-1.0.0.jar` into your server's `mods/` folder.
+1. Drop `AntiXray-1.1.0.jar` into your server's `mods/` folder.
 2. Start the server once. AntiXray creates its data folder (`mods/Stoshe_AntiXray/`) with a `config.json` and the `lang/` files.
-3. Confirm it loaded — the console prints the `AntiXray v1.0.0` banner on startup.
+3. Confirm it loaded — the console prints the `AntiXray v1.1.0` banner on startup.
 
 Protection starts immediately. Step 2 is the one check worth doing.
 
