@@ -27,17 +27,17 @@
 
 ## Overview
 
-AntiXray defeats **X-ray** — the cheats that let a player see through solid blocks to your ores — on two fronts at once. It **hides** your ores so X-ray has nothing to reveal, and it **baits** cheaters with fake ores only an X-ray user could find, so you can catch them.
+AntiXray defeats **X-ray** — the cheats that let a player see through solid blocks to your ores — on two fronts
+at once. It **hides** your ores so X-ray has nothing to reveal, and it **baits** cheaters with fake ores only an
+X-ray user could find, so you can catch them. Everything runs server-side from a single JAR: no client mod, and
+honest players never see or feel a thing.
 
-Everything runs server-side from a single JAR. There's no client mod, and honest players never see or feel a thing.
-
-- **Per-player packet obfuscation** — fully-enclosed real ores are shown as plain stone in each client's view only; the server world is **never** modified.
-- **Fake-ore honeypots** — a field of decoy ores buried in real rock. A legit player can't see enclosed blocks, so digging to one is a giveaway of X-ray.
-- **Protected blocks** — the same for buried non-ore valuables, plus rare **decoy chests** that bait a cheater into tunnelling for loot that was never there.
-- **Detection** — honeypot hits + abnormal mining rate feed a decaying **suspicion score**; online admins get a quiet alert on flag. Nothing is ever auto-punished.
-- **Admin panel & live spectate** — one command opens a tabbed panel listing suspects worst-first, each with a one-click server follow-camera (first or third person), a spectator HUD, and a suspect-inventory view to confiscate the evidence.
-- **Safe by design** — exposed faces are never touched, the area you're mining is always revealed as real, and breaking a block re-shows the true neighbours.
-- **Drop-in** — wildcard block ids auto-discover your server's ores, per-world toggles, and English + Portuguese localization.
+- **Per-player packet obfuscation** — enclosed real ores are shown as plain stone in each client's view only; the server world is **never** modified
+- **Fake-ore honeypots** — decoy ores buried in real rock, which only X-ray can find and every one of them a trap
+- **Protected blocks** — the same for buried non-ore valuables, plus rare decoy chests
+- **Detection** — honeypot hits + mining rate feed a decaying suspicion score, with quiet admin alerts and nothing ever auto-punished
+- **Admin panel & live spectate** — suspects worst-first, a one-click server follow-camera, and a suspect-inventory view to confiscate the evidence
+- **Drop-in** — wildcard block ids auto-discover your server's ores; per-world toggles; English &amp; Portuguese
 
 ---
 
@@ -45,56 +45,23 @@ Everything runs server-side from a single JAR. There's no client mod, and honest
 
 1. Drop `AntiXray-1.0.0.jar` into your server's `mods/` folder.
 2. Start the server once to generate `config.json` and the language files.
-3. Confirm it resolved your world's ore ids:
+3. Run `/antixray` (alias `/ax`) and check **Status → Fake-ore ids resolved** is greater than `0`.
 
-```text
-/antixray            # open the panel (alias /ax)
-# Status → "Fake-ore ids resolved" should be > 0
-```
-
-That's it — protection is automatic from there. Ore ids aren't universal, but the default `FakeOrePalette` of `["Ore_*"]` is a wildcard that discovers whatever your world actually registered. If the count is `0`, use **Tools → Probe: ON**, break a few ores to read their real names from chat, and put those in `config.json`.
-
-The **[Getting Started](https://stoshelabs.github.io/antixray/guide/intro/getting-started)** guide covers this in full.
-
----
-
-## How it protects
-
-| | |
-| --- | --- |
-| 🛡️ **Obfuscation** | Real ores are shown as plain rock in each client's view; X-ray sees stone where your ores are. |
-| 🪤 **Honeypots** | A field of fake ores fills the hidden rock — the only ones X-ray can see, and all of them are traps. |
-| 🧰 **Protected blocks** | Buried valuables masked as rock, and rare decoy chests that only an X-ray user would ever dig to. |
-| 📈 **Detection** | Honeypot hits + mining rate → a decaying suspicion score → quiet admin alerts. |
-| 👁️ **Spectate** | Watch a flagged suspect mine in real time with a server follow-camera, then confiscate the evidence from their inventory. |
-
-Read the mechanics in depth, starting with **[Packet Obfuscation](https://stoshelabs.github.io/antixray/guide/protection/obfuscation)**.
+That's it — protection is automatic from there. The **[Getting Started](https://stoshelabs.github.io/antixray/guide/intro/getting-started)** guide covers this in full, including what to do if that count is zero.
 
 ---
 
 ## Documentation
 
-Everything lives on the docs site:
+Everything lives on the docs site — mechanics, every config key, and the full command reference:
 
 | | |
 | --- | --- |
 | 🚀 [Getting Started](https://stoshelabs.github.io/antixray/guide/intro/getting-started) | Install to first protected server |
-| 🛡️ [Packet Obfuscation](https://stoshelabs.github.io/antixray/guide/protection/obfuscation) · [Protected Blocks](https://stoshelabs.github.io/antixray/guide/protection/protected-blocks) · [Honeypots & Detection](https://stoshelabs.github.io/antixray/guide/protection/detection) · [Admin Panel & Spectate](https://stoshelabs.github.io/antixray/guide/protection/spectate) | How it protects |
-| ⚙️ [Block IDs & Probe](https://stoshelabs.github.io/antixray/guide/setup/block-ids) · [Config Reference](https://stoshelabs.github.io/antixray/guide/setup/config) | Configuration |
-| 📖 [Commands & Panel](https://stoshelabs.github.io/antixray/guide/reference/commands) · [Permissions](https://stoshelabs.github.io/antixray/guide/reference/permissions) | Reference |
+| 🛡️ [Packet Obfuscation](https://stoshelabs.github.io/antixray/guide/protection/obfuscation) · [Protected Blocks](https://stoshelabs.github.io/antixray/guide/protection/protected-blocks) · [Honeypots &amp; Detection](https://stoshelabs.github.io/antixray/guide/protection/detection) · [Admin Panel &amp; Spectate](https://stoshelabs.github.io/antixray/guide/protection/spectate) | How it protects |
+| ⚙️ [Block IDs &amp; Probe](https://stoshelabs.github.io/antixray/guide/setup/block-ids) · [Config Reference](https://stoshelabs.github.io/antixray/guide/setup/config) | Configuration |
+| 📖 [Commands &amp; Panel](https://stoshelabs.github.io/antixray/guide/reference/commands) · [Permissions](https://stoshelabs.github.io/antixray/guide/reference/permissions) | Reference |
 | 📝 [Changelog](https://stoshelabs.github.io/antixray/guide/changelog) | What changed in each release |
-
----
-
-## Language
-
-AntiXray ships English and Brazilian Portuguese. Set the language in `config.json`:
-
-```json
-"General": { "Language": "pt_br" }
-```
-
-English is always loaded as the fallback, so a missing key can never leave a blank string. Both files are exported to `mods/Stoshe_AntiXray/lang/` on first run — edit them to customize any message, then **Tools → Reload config**. To add a language, drop a new `<code>.json` in that folder and point `Language` at it.
 
 ---
 
@@ -108,4 +75,4 @@ The build locates `HytaleServer.jar` from your Hytale install (or `libs/`). The 
 
 ---
 
-<sub>Built for Hytale by <a href="https://github.com/gitgusilva">Gustavo Will</a> · Stoshe Labs.</sub>
+<sub>Built for Hytale by <a href="https://github.com/gitgusilva">Gustavo Will</a> · Stoshe Labs · <a href="LICENSE">MIT</a></sub>
