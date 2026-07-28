@@ -5,7 +5,14 @@ name: Deploy documentation
 on:
   push:
     branches: ["main"]
-    paths: ["docs/**", ".github/workflows/docs.yml"]
+    # gradle.properties and manifest.json are here because .vitepress/config.mts reads them at build
+    # time to substitute {{PLUGIN_VERSION}} / {{SERVER_VERSION}}. Without them a release commit that
+    # only bumps the version would leave the published site showing the previous one.
+    paths:
+      - "docs/**"
+      - "gradle.properties"
+      - "src/main/resources/manifest.json"
+      - ".github/workflows/docs.yml"
   workflow_dispatch:
 
 permissions:
