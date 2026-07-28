@@ -15,11 +15,8 @@ import dev.stoshe.antixray.util.Console;
 
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
@@ -29,11 +26,15 @@ import java.util.concurrent.TimeUnit;
 /**
  * The packet-level anti-xray core. For every eligible player it obfuscates, one chunk at a time, the vertical
  * slab ({@code VerticalRadius} above/below, up to {@code MaxY}) of every loaded chunk within
- * {@code ChunkRadius} of them — hiding each fully-enclosed real ore as plain rock and scattering a capped
- * number of honeypot fake ores into hidden rock. Everything is sent to that <em>one</em> player via
- * {@link ServerSetBlock}; the world is never changed and no other player sees any of it. Exposed faces are
- * never touched, so a legitimate player never sees a fake, and breaking a block re-sends the real neighbours
- * so mining always uncovers the truth.
+ * {@code ChunkRadius} of them — hiding each fully-enclosed real ore as plain rock and scattering honeypot fake
+ * ores through hidden rock. Everything is sent to that <em>one</em> player via {@link ServerSetBlock}; the world
+ * is never changed and no other player sees any of it. Exposed faces are never touched, so a legitimate player
+ * never sees a fake, and breaking a block re-sends the real neighbours so mining always uncovers the truth.
+ *
+ * <p>The field is <em>derived, never recorded</em>: which rock becomes a fake ore and which ore is masked is a
+ * pure function of the block position and the terrain around it, so the break handler recomputes the answer
+ * instead of consulting a per-player list of positions. Only which chunk sections a client has already been
+ * sent is tracked per player.
  *
  * <p>Each chunk's slab is read into a padded {@link Slab} array <em>once</em> per scan, so occlusion checks
  * hit memory instead of making ~13 {@code world.getBlock} calls per candidate block — the dominant cost of
@@ -101,35 +102,6 @@ public final class ObfuscationManager {
     /** Wires the optional send-time path so the tick precomputes obfuscated chunks instead of ServerSetBlock. */
     public void setSendTime(dev.stoshe.antixray.net.SendTimeObfuscator sendTime) {
         this.sendTime = sendTime;
-    }
-
-    /** Arms honeypot positions for a player (used by the send-time filter so detection still fires). */
-    public void registerTraps(UUID uuid, java.util.Collection<BlockKey> traps) {
-        addCapped(uuid, traps, true);
-    }
-
-    /**
-     * Records the positions the send-time path masked (real ore/valuable drawn as rock) for a player, so
-     * {@link #revealAround} puts the real block back when mining exposes it. Without this the send-time path
-     * hides ores permanently for that client, exactly like the classic path did.
-     */
-    public void registerMasked(UUID uuid, java.util.Collection<BlockKey> masked) {
-        addCapped(uuid, masked, false);
-    }
-
-    private void addCapped(UUID uuid, java.util.Collection<BlockKey> keys, boolean trap) {
-        if (keys == null || keys.isEmpty()) {
-            return;
-        }
-        PlayerView view = views.computeIfAbsent(uuid, u -> new PlayerView());
-        Set<BlockKey> target = trap ? view.traps : view.masked;
-        int cap = cfg().MaxTrapsPerPlayer;
-        for (BlockKey k : keys) {
-            if (target.size() >= cap) {
-                break;
-            }
-            target.add(k);
-        }
     }
 
     private AntiXrayConfig.Obfuscation cfg() {
@@ -246,8 +218,6 @@ public final class ObfuscationManager {
         if (!world.getName().equals(view.worldName)) {
             view.worldName = world.getName();
             view.doneChunks.clear();
-            view.traps.clear();
-            view.masked.clear();
         }
         int radius = cfg().ChunkRadius;
         int vr = cfg().VerticalRadius;
@@ -259,19 +229,6 @@ public final class ObfuscationManager {
                 || Math.abs(chunkZ(key) - pcz) > radius + 1);
 
         var tracker = pr.getChunkTracker();
-        // Disarm positions in chunks the CLIENT no longer holds (view distance, relog, chunk reload): it has
-        // been re-sent the real terrain there, so our fake is gone from their screen. Leaving those armed makes
-        // a later legitimate break at that spot count as a honeypot hit — a cheat flag for a clean player.
-        //
-        // The test is the client's chunk tracker, NOT our ChunkRadius: the client's view distance is normally
-        // larger than ChunkRadius, so a chunk leaving our radius is still on screen with the fakes intact.
-        // Pruning by radius would disarm live honeypots instead.
-        if (tracker != null && (pcx != view.lastPcx || pcz != view.lastPcz)) {
-            view.lastPcx = pcx;
-            view.lastPcz = pcz;
-            pruneUnloaded(view.traps, tracker);
-            pruneUnloaded(view.masked, tracker);
-        }
 
         // The unit of work is a 32-block SECTION of a chunk, and doneChunks stores one bit per section.
         //
@@ -404,18 +361,18 @@ public final class ObfuscationManager {
         Slab slab = Slab.read(world, ox - depth, minY - depth, oz - depth,
                 size + 2 * depth, (maxY - minY + 1) + 2 * depth, size + 2 * depth, catalog.emptyId());
 
-        // Decoys are per-SECTION, not per-block: at most one buried chest per section, and only in a small
-        // share of sections (there is far too much rock for a per-block density to give a believable count).
-        // The section — rather than the whole chunk — is the unit here because a chunk is now obfuscated one
-        // section at a time; it also matches what the send-time path has always done, so both paths scatter
-        // decoys identically.
-        boolean placeDecoy = catalog.hasDecoys() && sectionDecoySelected(cx, sy, cz);
-        boolean decoyDone = false;
+        // The two BAITS are per-SECTION, not per-block: at most one of each per section, in a small share of
+        // sections (there is far too much rock for a per-block density to give a believable count). Their slot
+        // inside the section is derived from (cx,sy,cz) too, so — like every other part of the field — they are
+        // a pure function of the position and can be recomputed later instead of remembered.
+        final int trapLocal = trapLocalIndex(cx, sy, cz);
+        final boolean placeTrap = catalog.hasTrapOres() && sectionTrapSelected(cx, sy, cz);
+        final int decoyLocal = decoyLocalIndex(cx, sy, cz);
+        final boolean placeDecoy = catalog.hasDecoys() && sectionDecoySelected(cx, sy, cz);
 
         // Hoisted out of the loop: these are read once per candidate block otherwise, and the config lookup
         // walks plugin -> config -> Obfuscation every time.
         final double density = cfg().FakeOreDensity;
-        final int trapCap = cfg().MaxTrapsPerPlayer;
         final int hideOre = catalog.hideOreId();
         final int hideProtected = catalog.hideProtectedId();
 
@@ -448,36 +405,33 @@ public final class ObfuscationManager {
                         continue;
                     }
                     int target;
-                    // A MASK (real ore/valuable shown as rock) must be undone the moment mining exposes it,
-                    // or the client keeps drawing rock over a real ore forever — the rescan skips exposed
-                    // blocks, so nothing else would ever correct it. Recorded per player, revealed by
-                    // revealAround exactly like a honeypot.
-                    boolean mask = false;
-                    boolean trap = false;
                     if (catalog.isKnownOreId(real)) {
-                        if (isExposed(slab, x, y, z) || atCap(view, view.masked, trapCap, pr)) {
-                            continue; // visible to a legit player, or we could no longer track the mask
+                        if (isExposed(slab, x, y, z)) {
+                            continue; // visible to a legit player — leave it alone
                         }
                         // Real ore: HIDE it as plain rock so X-ray sees nothing at its true location.
                         target = hideOre;
-                        mask = true;
                     } else if (catalog.isProtectedBlock(real)) {
-                        if (isExposed(slab, x, y, z) || atCap(view, view.masked, trapCap, pr)) {
+                        if (isExposed(slab, x, y, z)) {
                             continue;
                         }
                         // Real chest/valuable buried in terrain (enclosed): mask it as rock so X-ray can't
                         // spot it.
                         target = hideProtected;
-                        mask = true;
                     } else {
-                        if (batch.size() >= HONEYPOT_BUDGET_PER_CHUNK
-                                || !catalog.isHostRock(real) || atCap(view, view.traps, trapCap, pr)) {
-                            continue; // budget reserved for masking real ores from here on
+                        if (!catalog.isHostRock(real)) {
+                            continue;
                         }
-                        // One buried decoy chest for this chunk (if selected), else a distributed fake ore.
-                        boolean decoy = placeDecoy && !decoyDone;
-                        if (!decoy && !fieldSelected(x, y, z, density)) {
-                            continue; // not part of the field — rejected before any occlusion read
+                        // This section's baits (trap ore / decoy chest, at most one each) win over the
+                        // camouflage field; everything else is decided by the density gate. The baits ignore
+                        // the packet budget: there are two of them per section and they are the only thing
+                        // detection can actually fire on.
+                        boolean trap = placeTrap && isSectionSlot(trapLocal, x, y, z);
+                        boolean decoy = !trap && placeDecoy && isDecoyLocal(decoyLocal, x, y, z);
+                        if (!trap && !decoy
+                                && (batch.size() >= HONEYPOT_BUDGET_PER_CHUNK
+                                    || !fieldSelected(x, y, z, density))) {
+                            continue; // budget spent, or simply not part of the field — no occlusion read
                         }
                         // Honeypot host rock: buried deep enough it's never behind something visible. For
                         // CoverDepth >= 1 this subsumes isExposed (d=1 IS the 6-neighbour ring), so the
@@ -486,19 +440,12 @@ public final class ObfuscationManager {
                             continue;
                         }
                         BlockKey here = new BlockKey(x, y, z);
-                        target = decoy ? catalog.decoyFor(here) : catalog.fakeOreFor(here);
-                        decoyDone |= decoy;
-                        trap = true;
+                        target = trap ? catalog.trapOreFor(here)
+                                : decoy ? catalog.decoyFor(here)
+                                : catalog.fakeOreFor(here);
                     }
                     if (target == real) {
                         continue;
-                    }
-                    BlockKey key = new BlockKey(x, y, z);
-                    if (trap) {
-                        view.traps.add(key);
-                    }
-                    if (mask) {
-                        view.masked.add(key);
                     }
                     batch.add(new ServerSetBlock(x, y, z, target, (short) 0, (byte) 0));
                 }
@@ -508,44 +455,106 @@ public final class ObfuscationManager {
         return true;
     }
 
+    // ------------------------------------------------------------------ the field as a pure function
+    //
+    // Nothing about the obfuscated field is remembered per player: every part of it — which rock becomes a fake
+    // ore, which ore is masked, where a section's decoy sits — is a deterministic function of the block position
+    // and the world's own contents, identical for every player. So "is there a fake at (x,y,z)?" is RECOMPUTED
+    // when a break needs the answer, instead of being looked up in a per-player set of positions.
+    //
+    // That set used to be the hard limit on how much of the world could be protected at all: at the default
+    // ChunkRadius/VerticalRadius/FakeOreDensity one player's field is ~100k positions against a 40k cap, so
+    // obfuscation stopped a few seconds after joining and only resumed in scraps as the client unloaded chunks —
+    // which is exactly what "fake ores show up in random chunks, not the ones I'm standing in" looks like.
+
     /**
-     * Drops every position whose chunk the client no longer has. One tracker lookup per CHUNK, not per position
-     * (the sets hold up to {@code MaxTrapsPerPlayer} entries but span only a few hundred chunks), and it only
-     * runs when the player crosses a chunk border.
+     * TRAP (honeypot bait): the one rare position per section that is deliberately <em>never</em> revealed, so
+     * it is the single thing a player can actually break. Breaking one is the honeypot hit.
+     *
+     * <p>Note what is NOT tested here: whether the block is still buried. It cannot be — to break a block you
+     * must be able to see its face, so by the time anyone hits a trap they have already opened it up. That is
+     * exactly why the old "is it still enclosed?" test made honeypots impossible to trip. What separates a
+     * cheater from an unlucky miner is not one hit but the RATE of them, which is why the trap is rare
+     * ({@code TrapChancePerSection}) and the flag needs several hits inside a window.
      */
-    private static void pruneUnloaded(Set<BlockKey> set,
-            com.hypixel.hytale.server.core.modules.entity.player.ChunkTracker tracker) {
-        if (set.isEmpty()) {
-            return;
+    private boolean isArmedTrap(World world, int x, int y, int z) {
+        if (y < ChunkUtil.MIN_Y || y > cfg().MaxY) {
+            return false;
         }
-        Map<Long, Boolean> loadedByChunk = new HashMap<>();
-        set.removeIf(k -> {
-            int cx = ChunkUtil.chunkCoordinate(k.x());
-            int cz = ChunkUtil.chunkCoordinate(k.z());
-            Boolean loaded = loadedByChunk.get(chunkKey(cx, cz));
-            if (loaded == null) {
-                loaded = tracker.isLoaded(ChunkUtil.indexChunk(cx, cz));
-                loadedByChunk.put(chunkKey(cx, cz), loaded);
+        try {
+            // The world still holds plain rock here (we only ever changed what the client was shown), so a
+            // block that is no longer host rock cannot have been carrying a bait.
+            int real = world.getBlock(x, y, z);
+            if (catalog.isAir(real) || !catalog.isHostRock(real)) {
+                return false;
             }
-            return !loaded;
-        });
+        } catch (Exception e) {
+            return false;
+        }
+        return isTrapPosition(x, y, z);
+    }
+
+    /** True if this position is its section's trap-ore slot or decoy-chest slot (both are bait). */
+    private boolean isTrapPosition(int x, int y, int z) {
+        int size = ChunkUtil.SIZE;
+        int cx = ChunkUtil.chunkCoordinate(x);
+        int cz = ChunkUtil.chunkCoordinate(z);
+        int sy = Math.floorDiv(y, size);
+        if (catalog.hasTrapOres() && sectionTrapSelected(cx, sy, cz)
+                && isSectionSlot(trapLocalIndex(cx, sy, cz), x, y, z)) {
+            return true;
+        }
+        return catalog.hasDecoys() && sectionDecoySelected(cx, sy, cz)
+                && isDecoyLocal(decoyLocalIndex(cx, sy, cz), x, y, z);
     }
 
     /**
-     * True when a per-player position set is full, meaning we must STOP obfuscating rather than keep changing
-     * blocks we can no longer track. An untracked change is worse than no change at all: an untracked fake can
-     * never be reported as a honeypot hit (silent false negative) and an untracked mask can never be revealed,
-     * so a real ore would stay hidden for that client forever. Warns once per player so the cap is never silent.
+     * CAMOUFLAGE: this block is host rock the dense field would have drawn as a common fake ore. Used only when
+     * REVEALING — the occlusion test is deliberately not applied, because the break we are reacting to is
+     * precisely what un-buried the neighbours, so testing it would skip the blocks that most need putting back.
+     *
+     * <p>Traps are excluded: restoring the bait would put us straight back to a honeypot that can never be hit.
      */
-    private boolean atCap(PlayerView view, Set<BlockKey> set, int cap, PlayerRef pr) {
-        if (set.size() < cap) {
+    private boolean isFieldCandidate(int blockId, int x, int y, int z) {
+        if (catalog.isAir(blockId) || catalog.isKnownOreId(blockId) || catalog.isProtectedBlock(blockId)
+                || !catalog.isHostRock(blockId)) {
             return false;
         }
-        if (!view.capWarned) {
-            view.capWarned = true;
-            Console.warning("MaxTrapsPerPlayer (" + cap + ") reached for " + pr.getUsername()
-                    + " — pausing new obfuscation for them. Lower ChunkRadius/VerticalRadius/FakeOreDensity, "
-                    + "or raise MaxTrapsPerPlayer.");
+        return fieldSelected(x, y, z, cfg().FakeOreDensity) && !isTrapPosition(x, y, z);
+    }
+
+    /** True if this player's client was actually sent the obfuscated form of the section holding (x,y,z). */
+    private boolean wasObfuscatedFor(PlayerView view, int x, int y, int z) {
+        if (sendTime != null && sendTime.active()) {
+            return true; // send-time rewrites every chunk on its way out, so there is no per-player done-set
+        }
+        if (view == null) {
+            return false;
+        }
+        int sy = Math.floorDiv(y, ChunkUtil.SIZE);
+        if (sy < 0 || sy >= SECTIONS_PER_CHUNK) {
+            return false;
+        }
+        long done = view.doneChunks.getOrDefault(
+                chunkKey(ChunkUtil.chunkCoordinate(x), ChunkUtil.chunkCoordinate(z)), 0L);
+        return (done & (1L << sy)) != 0L;
+    }
+
+    /** Same as {@link #isBuried} but reading the live world — for the one-off checks outside a chunk scan. */
+    private boolean isBuriedInWorld(World world, int x, int y, int z, int depth) {
+        try {
+            for (int d = 1; d <= depth; d++) {
+                if (catalog.isAir(world.getBlock(x + d, y, z))
+                        || catalog.isAir(world.getBlock(x - d, y, z))
+                        || catalog.isAir(world.getBlock(x, y + d, z))
+                        || catalog.isAir(world.getBlock(x, y - d, z))
+                        || catalog.isAir(world.getBlock(x, y, z + d))
+                        || catalog.isAir(world.getBlock(x, y, z - d))) {
+                    return false;
+                }
+            }
+        } catch (Exception e) {
+            return false;
         }
         return true;
     }
@@ -594,6 +603,32 @@ public final class ObfuscationManager {
         return frac < density;
     }
 
+    /** Deterministic per-SECTION gate: does this section get its one honeypot trap? Stable across rescans. */
+    private boolean sectionTrapSelected(int cx, int sy, int cz) {
+        double c = cfg().TrapChancePerSection;
+        if (c <= 0.0) {
+            return false;
+        }
+        if (c >= 1.0) {
+            return true;
+        }
+        double frac = ((BlockKey.mix(cx, sy, cz) ^ 0x14057B7EF767814FL) >>> 11) * 0x1.0p-53;
+        return frac < c;
+    }
+
+    /** The slot a section's trap ore occupies, packed like {@link #decoyLocalIndex}. */
+    public static int trapLocalIndex(int cx, int sy, int cz) {
+        return (int) ((BlockKey.mix(cx, sy, cz) ^ 0xA0761D6478BD642FL) >>> 23) & 0x7FFF;
+    }
+
+    /** Whether a world position is the local slot a packed index points at. */
+    public static boolean isSectionSlot(int packed, int x, int y, int z) {
+        int mask = ChunkUtil.SIZE - 1;
+        return (x & mask) == ((packed >>> 10) & mask)
+                && (y & mask) == ((packed >>> 5) & mask)
+                && (z & mask) == (packed & mask);
+    }
+
     /** Deterministic per-SECTION gate: does this section get its one buried decoy chest? Stable across rescans. */
     private boolean sectionDecoySelected(int cx, int sy, int cz) {
         double c = cfg().ProtectedDecoyChunkChance;
@@ -609,6 +644,35 @@ public final class ObfuscationManager {
         return frac < c;
     }
 
+    /**
+     * The one position inside a section its decoy may occupy, packed as {@code lx<<10 | ly<<5 | lz}.
+     *
+     * <p>Derived from the section coordinates rather than "the first buried rock the scan happens to reach", so
+     * the decoy — like the rest of the field — can be recognised later from its position alone. If the drawn
+     * spot isn't buried host rock, that section simply gets no decoy (which just makes the effective chest rate
+     * a little lower than {@code ProtectedDecoyChunkChance}).
+     */
+    public static int decoyLocalIndex(int cx, int sy, int cz) {
+        return (int) ((BlockKey.mix(cx, sy, cz) ^ 0x9E3779B97F4A7C15L) >>> 23) & 0x7FFF;
+    }
+
+    /** Whether a world position is the local slot {@link #decoyLocalIndex} drew for its section. */
+    public static boolean isDecoyLocal(int packed, int x, int y, int z) {
+        return isSectionSlot(packed, x, y, z);
+    }
+
+    /** Recomputes whether (x,y,z) is its section's decoy slot — the reverse of the scan's placement test. */
+    private boolean isDecoyPosition(int x, int y, int z) {
+        if (!catalog.hasDecoys()) {
+            return false;
+        }
+        int size = ChunkUtil.SIZE;
+        int cx = ChunkUtil.chunkCoordinate(x);
+        int cz = ChunkUtil.chunkCoordinate(z);
+        int sy = Math.floorDiv(y, size);
+        return sectionDecoySelected(cx, sy, cz) && isDecoyLocal(decoyLocalIndex(cx, sy, cz), x, y, z);
+    }
+
     // ------------------------------------------------------------------ reveal on break (world thread)
 
     /**
@@ -618,18 +682,23 @@ public final class ObfuscationManager {
      */
     public boolean revealAround(PlayerRef pr, World world, int bx, int by, int bz) {
         PlayerView view = views.get(pr.getUuid());
-        boolean wasTrap = view != null && view.traps.remove(new BlockKey(bx, by, bz));
+        // Honeypot hit: the block being broken is one of this section's rare baits, and this client was
+        // actually sent the obfuscated form of that section (so it really was showing them an ore).
+        boolean wasTrap = wasObfuscatedFor(view, bx, by, bz) && isArmedTrap(world, bx, by, bz);
 
         PacketHandler ph = pr.getPacketHandler();
-        if (ph != null && view != null) {
-            // Only re-send positions we actually OBFUSCATED for this player: the honeypot fakes (traps) AND the
-            // real ores/valuables we masked as rock (masked). Everything else — furniture, dirt, air — we never
+        if (ph != null) {
+            // Re-send only the block classes we ever touch: a masked real ore/valuable, or host rock the field
+            // would have drawn as a fake. Everything else — furniture, dirt, connected blocks — we never
             // changed, so its client value already matches the world; re-pushing it via a plain ServerSetBlock
             // (no rotation/state) is what duplicated/desynced nearby furniture & connected blocks.
             //
-            // Revealing `masked` is what makes mining work at all: the block a player just uncovered stops being
-            // enclosed, the rescan then skips it (it only touches enclosed blocks), so this is the ONLY chance to
-            // put the real ore back on their screen.
+            // Re-sending a position we did NOT actually change (an ore that was exposed anyway, rock outside a
+            // scanned section) is a no-op on the client: it is the block the client already has.
+            //
+            // Revealing the masks is what makes mining work at all: the block a player just uncovered stops
+            // being enclosed, the rescan then skips it (it only touches enclosed blocks), so this is the ONLY
+            // chance to put the real ore back on their screen.
             int r = Math.max(1, cfg().RevealRadius);
             List<ToClientPacket> batch = new ArrayList<>();
             for (int dx = -r; dx <= r; dx++) {
@@ -638,15 +707,15 @@ public final class ObfuscationManager {
                         int x = bx + dx;
                         int y = by + dy;
                         int z = bz + dz;
-                        BlockKey k = new BlockKey(x, y, z);
-                        // Note the non-short-circuit |: both sets must be cleared, not just the first that hits.
-                        if (!(view.traps.remove(k) | view.masked.remove(k))) {
-                            continue; // not something we changed — leave the client's (already-real) value alone
-                        }
                         try {
                             int realN = world.getBlock(x, y, z);
-                            if (!catalog.isAir(realN)) {
-                                batch.add(new ServerSetBlock(x, y, z, realN, (short) 0, (byte) 0));
+                            if (catalog.isAir(realN)) {
+                                continue;
+                            }
+                            boolean ours = catalog.isKnownOreId(realN) || catalog.isProtectedBlock(realN)
+                                    || isFieldCandidate(realN, x, y, z);
+                            if (ours) {
+                                addRealBlock(batch, world, x, y, z, realN);
                             }
                         } catch (Exception ignored) {
                             // leaving the client value is harmless; a rescan will correct it
@@ -659,6 +728,27 @@ public final class ObfuscationManager {
         return wasTrap;
     }
 
+    /**
+     * Queues the TRUE block at a position, carrying its real rotation and filler exactly like vanilla's own
+     * {@code ChunkSystems$ReplicateChanges} does. Sending 0/0 instead is only harmless for a block we ourselves
+     * had already flattened; a reveal also re-sends blocks we may never have touched, and resetting a rotated
+     * rock's orientation on the client would be a visible desync.
+     */
+    private void addRealBlock(List<ToClientPacket> batch, World world, int x, int y, int z, int blockId) {
+        short filler = 0;
+        byte rotation = 0;
+        try {
+            var chunk = world.getChunkIfLoaded(ChunkUtil.indexChunkFromBlock(x, z));
+            if (chunk != null) {
+                filler = (short) chunk.getFiller(x, y, z);
+                rotation = (byte) chunk.getRotationIndex(x, y, z);
+            }
+        } catch (Exception ignored) {
+            // fall back to the neutral state rather than skipping the block entirely
+        }
+        batch.add(new ServerSetBlock(x, y, z, blockId, filler, rotation));
+    }
+
     // ------------------------------------------------------------------ diagnostics
 
     /**
@@ -668,35 +758,47 @@ public final class ObfuscationManager {
      * nearest first, with the fake ore each position now shows. Fly to one and dig two blocks: you should find
      * that fake ore, and breaking it should fire a honeypot alert.
      *
-     * @return lines of {@code "x, y, z (12m) → Ore_Gold_Stone"}, at most {@code limit}.
+     * <p>Recomputed by scanning the blocks around the player (the field is a pure function of position — see
+     * {@link #isArmedFake}), so it reports what the client is actually being shown rather than a bookkeeping
+     * side-table that could disagree with it.
      */
-    public List<String> nearestTraps(UUID uuid, int px, int py, int pz, int limit) {
-        List<String> out = new ArrayList<>();
-        PlayerView view = views.get(uuid);
-        if (view == null) {
-            return out;
+    public void reportNearestTraps(PlayerRef pr, int radius, int limit) {
+        World world = Universe.get().getWorld(pr.getWorldUuid());
+        if (world == null) {
+            return;
         }
-        List<BlockKey> keys = new ArrayList<>(view.traps);
-        keys.sort(Comparator.comparingLong(k -> {
-            long dx = k.x() - px;
-            long dy = k.y() - py;
-            long dz = k.z() - pz;
-            return dx * dx + dy * dy + dz * dz;
-        }));
-        for (BlockKey k : keys) {
-            if (out.size() >= limit) {
-                break;
+        int r = Math.max(4, Math.min(48, radius));
+        PlayerView view = views.get(pr.getUuid());
+        world.execute(() -> {
+            var pos = pr.getTransform().getPosition();
+            int px = (int) Math.floor(pos.x);
+            int py = (int) Math.floor(pos.y);
+            int pz = (int) Math.floor(pos.z);
+            List<BlockKey> found = new ArrayList<>();
+            for (int x = px - r; x <= px + r; x++) {
+                for (int y = py - r; y <= py + r; y++) {
+                    for (int z = pz - r; z <= pz + r; z++) {
+                        if (wasObfuscatedFor(view, x, y, z) && isArmedTrap(world, x, y, z)) {
+                            found.add(new BlockKey(x, y, z));
+                        }
+                    }
+                }
             }
-            double dist = Math.sqrt(Math.pow(k.x() - px, 2) + Math.pow(k.y() - py, 2) + Math.pow(k.z() - pz, 2));
-            out.add(k + "  (" + Math.round(dist) + "m)  → " + BlockCatalog.nameOf(catalog.fakeOreFor(k)));
-        }
-        return out;
-    }
-
-    /** How many honeypots are currently armed in this player's client view. */
-    public int trapCount(UUID uuid) {
-        PlayerView view = views.get(uuid);
-        return view == null ? 0 : view.traps.size();
+            found.sort(Comparator.comparingLong(k -> {
+                long dx = k.x() - px;
+                long dy = k.y() - py;
+                long dz = k.z() - pz;
+                return dx * dx + dy * dy + dz * dz;
+            }));
+            pr.sendMessage(ChatUtil.info(dev.stoshe.antixray.util.Tr.t("msg.traps_header", "n", found.size())));
+            for (int i = 0; i < Math.min(limit, found.size()); i++) {
+                BlockKey k = found.get(i);
+                double dist = Math.sqrt(Math.pow(k.x() - px, 2) + Math.pow(k.y() - py, 2)
+                        + Math.pow(k.z() - pz, 2));
+                pr.sendMessage(ChatUtil.info(k + "  (" + Math.round(dist) + "m)  → "
+                        + BlockCatalog.nameOf(catalog.fakeOreFor(k))));
+            }
+        });
     }
 
     /**
@@ -716,7 +818,6 @@ public final class ObfuscationManager {
         }
         int r = Math.max(4, Math.min(40, radius));
         int secs = Math.max(2, Math.min(60, seconds));
-        PlayerView view = views.get(pr.getUuid());
         world.execute(() -> {
             PacketHandler ph = pr.getPacketHandler();
             if (ph == null) {
@@ -743,10 +844,8 @@ public final class ObfuscationManager {
                             continue;
                         }
                         // Never touch what the obfuscator owns: its honeypots, or a masked real ore.
-                        if (catalog.isKnownOreId(real) || catalog.isProtectedBlock(real)) {
-                            continue;
-                        }
-                        if (view != null && view.traps.contains(new BlockKey(x, y, z))) {
+                        if (catalog.isKnownOreId(real) || catalog.isProtectedBlock(real)
+                                || isFieldCandidate(real, x, y, z) || isTrapPosition(x, y, z)) {
                             continue;
                         }
                         batch.add(new ServerSetBlock(x, y, z, glass, (short) 0, (byte) 0));
@@ -765,8 +864,7 @@ public final class ObfuscationManager {
                     }
                     List<ToClientPacket> revert = new ArrayList<>();
                     for (int[] p : touched) {
-                        revert.add(new ServerSetBlock(p[0], p[1], p[2], world.getBlock(p[0], p[1], p[2]),
-                                (short) 0, (byte) 0));
+                        addRealBlock(revert, world, p[0], p[1], p[2], world.getBlock(p[0], p[1], p[2]));
                     }
                     flush(h, revert);
                     pr.sendMessage(ChatUtil.info(dev.stoshe.antixray.util.Tr.t("msg.audit_off")));
@@ -827,8 +925,7 @@ public final class ObfuscationManager {
                     }
                     List<ToClientPacket> revert = new ArrayList<>();
                     for (int[] p : touched) {
-                        revert.add(new ServerSetBlock(p[0], p[1], p[2], world.getBlock(p[0], p[1], p[2]),
-                                (short) 0, (byte) 0));
+                        addRealBlock(revert, world, p[0], p[1], p[2], world.getBlock(p[0], p[1], p[2]));
                     }
                     flush(h, revert);
                     pr.sendMessage(ChatUtil.info(dev.stoshe.antixray.util.Tr.t("msg.test_reverted")));
@@ -948,20 +1045,8 @@ public final class ObfuscationManager {
          * HashMap under that would risk a corrupt read or a spin inside a resize.
          */
         final Map<Long, Long> doneChunks = new ConcurrentHashMap<>();
-        /** Honeypot positions armed for this player. Concurrent: the send-time filter adds off the world thread. */
-        final Set<BlockKey> traps = ConcurrentHashMap.newKeySet();
-        /**
-         * Positions where a REAL ore/valuable is being shown to this player as plain rock. Must be re-sent as
-         * soon as mining exposes them (see revealAround) — otherwise the mask is permanent for that client.
-         */
-        final Set<BlockKey> masked = ConcurrentHashMap.newKeySet();
         volatile String worldName = "";
         volatile boolean busy;
-        /** Last chunk the player was in — traps/masked are only pruned when this changes. */
-        int lastPcx = Integer.MIN_VALUE;
-        int lastPcz = Integer.MIN_VALUE;
-        /** Set once when MaxTrapsPerPlayer is hit, so the warning is logged one time per player. */
-        volatile boolean capWarned;
         /** Set once when a chunk hit the packet cap, so that warning is logged one time per player too. */
         volatile boolean truncWarned;
         /** When this player was first seen in-world (ms) — used to grace-gate send-time precompute. */

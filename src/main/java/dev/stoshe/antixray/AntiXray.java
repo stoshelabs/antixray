@@ -39,7 +39,6 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class AntiXray extends JavaPlugin {
 
-    private static final String VERSION = "1.1.0";
     private static AntiXray instance;
 
     private File dataDir;
@@ -67,7 +66,7 @@ public class AntiXray extends JavaPlugin {
     @Override
     protected void setup() {
         super.setup();
-        Console.banner(196, "AntiXray v" + VERSION, "Packet-level anti-xray + honeypot detection");
+        Console.banner(196, "AntiXray v" + getVersion(), "Packet-level anti-xray + honeypot detection");
 
         this.dataDir = getDataDirectory().toFile();
         if (!dataDir.exists()) {
@@ -435,9 +434,23 @@ public class AntiXray extends JavaPlugin {
         return instance;
     }
 
+    /**
+     * The running plugin version — the single source of truth for the banner, the panel title, the
+     * GitHub update comparison and the "what's new" popup.
+     *
+     * <p>It comes from {@code manifest.json}, which the build fills in from {@code gradle.properties}
+     * and the server parses before we start, so there is no second copy to drift. The jar-manifest
+     * {@code Implementation-Version} is only a fallback for the rare case of being loaded without a
+     * parsed plugin manifest (e.g. from a unit test).
+     */
     public String getVersion() {
+        var manifest = getManifest();
+        if (manifest != null && manifest.getVersion() != null) {
+            return manifest.getVersion().toString();
+        }
+
         String v = getClass().getPackage().getImplementationVersion();
-        return v != null ? v : VERSION;
+        return v != null ? v : "0.0.0";
     }
 
     public AntiXrayConfig getConfig() {

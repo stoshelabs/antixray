@@ -158,7 +158,9 @@ public class AntiXrayPanelPage extends InteractiveCustomUIPage<AntiXrayPanelPage
         String off = Tr.t("status.off");
         cb.set("#StatObf.Text", Tr.t("status.obfuscation", "state", obf.Enabled ? on : off));
         cb.set("#StatDet.Text", Tr.t("status.detection", "state", det.Enabled ? on : off));
-        cb.set("#StatFakeOres.Text", Tr.t("status.fake_ores", "n", plugin.getBlockCatalog().fakeOreCount()));
+        cb.set("#StatFakeOres.Text", Tr.t("status.fake_ores",
+                "n", plugin.getBlockCatalog().fakeOreCount(),
+                "t", plugin.getBlockCatalog().trapOreCount()));
         cb.set("#StatProtected.Text", Tr.t("status.protected",
                 "n", plugin.getBlockCatalog().protectedCount(),
                 "d", plugin.getBlockCatalog().decoyCount()));
@@ -228,15 +230,7 @@ public class AntiXrayPanelPage extends InteractiveCustomUIPage<AntiXrayPanelPage
             }
             case "Traps" -> {
                 if (DEBUG_TOOLS) {
-                    var pos = playerRef.getTransform().getPosition();
-                    var mgr = plugin.getObfuscationManager();
-                    java.util.UUID uuid = playerRef.getUuid();
-                    java.util.List<String> lines = mgr.nearestTraps(uuid, (int) Math.floor(pos.x),
-                            (int) Math.floor(pos.y), (int) Math.floor(pos.z), 10);
-                    playerRef.sendMessage(ChatUtil.info(Tr.t("msg.traps_header", "n", mgr.trapCount(uuid))));
-                    for (String line : lines) {
-                        playerRef.sendMessage(ChatUtil.info(line));
-                    }
+                    plugin.getObfuscationManager().reportNearestTraps(playerRef, 24, 10);
                 }
                 player.getPageManager().setPage(ref, store, Page.None);
             }

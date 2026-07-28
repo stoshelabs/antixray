@@ -44,9 +44,12 @@ Packet-level protection — the [primary defense](/guide/protection/obfuscation)
   "RevealRadius": 2,
   "HoneypotHostPrefixes": ["Rock_"],
   "FakeOreDensity": 0.03,
-  "MaxTrapsPerPlayer": 40000,
+  "MaxTrapsPerPlayer": 40000,   // deprecated, ignored
   "RadiusBlocks": 24,
-  "FakeOrePalette": ["Ore_*"],
+  "FakeOrePalette": ["Ore_Copper_*", "Ore_Iron_*"],
+  "TrapOrePalette": ["Ore_Gold_*", "Ore_Silver_*", "Ore_Cobalt_*", "Ore_Mithril_*",
+                     "Ore_Adamantite_*", "Ore_Thorium_*", "Ore_Onyxium_*", "Ore_Prisma"],
+  "TrapChancePerSection": 0.08,
   "FallbackHideBlock": "Rock_Stone",
   "HideRealOreAs": "Rock_Stone"
 }
@@ -64,9 +67,11 @@ Packet-level protection — the [primary defense](/guide/protection/obfuscation)
 | `RevealRadius` | `2` | On breaking a block, re-send real blocks within this radius (a safety buffer) so mining never uncovers a fake. Keep close to `CoverDepth`. |
 | `HoneypotHostPrefixes` | `["Rock_"]` | Fake ores only replace blocks whose id starts with one of these (real rock layers), so they never land in dirt/gravel/sand. Empty = any hidden block. |
 | `FakeOreDensity` | `0.03` | Fraction (0–1) of hidden rock turned into a fake ore — how thick the honeypot field is (evenly, stably distributed). This controls **only how many honeypots exist**; real ores are always hidden by `HideRealOreAs` either way. Sane range `0.01`–`0.05`. See the warning below. |
-| `MaxTrapsPerPlayer` | `40000` | Memory cap on tracked honeypot positions per player. On reaching it, obfuscation **stops** for that player (rather than silently untracking blocks) and a warning is logged. |
+| `MaxTrapsPerPlayer` | `40000` | **Deprecated and ignored** (kept so older config files still load). Honeypot positions are no longer stored per player — they are recomputed from the position — so there is nothing left to cap. |
 | `RadiusBlocks` | `24` | Block radius used **only** by the debug Test-flash / X-ray-audit views. |
-| `FakeOrePalette` | `["Ore_*"]` | The fake-ore field. Entries are exact ids **or `"Prefix*"` wildcards** — the default auto-discovers every ore variant actually registered in your world, so there's no id list to maintain. Check the resolved count in the **Status** tab. |
+| `FakeOrePalette` | common metals | The **camouflage** field. Entries are exact ids **or `"Prefix*"` wildcards**. Keep it to common ores: real valuables are masked as rock, so a common-only field is what makes every visible valuable a trap. Check the resolved count in the **Status** tab. |
+| `TrapOrePalette` | valuable ores | The **bait**. Same id/wildcard syntax; keep it disjoint from `FakeOrePalette`. Traps are never revealed on approach — breaking one is the honeypot hit. Empty = traps off. |
+| `TrapChancePerSection` | `0.08` | Chance a 32×32×32 section holds ONE trap. The knob that trades detection speed against false positives. |
 | `FallbackHideBlock` | `Rock_Stone` | Used only if none of the palette ids resolve. |
 | `HideRealOreAs` | `Rock_Stone` | Real hidden ores are shown as this (plain rock), so X-ray sees nothing at their true location. |
 
@@ -105,7 +110,8 @@ Suspicion tracking — the [honeypot + rate heuristics](/guide/protection/detect
   "RateWindowSeconds": 120,
   "RateFlagThreshold": 40,
   "HoneypotHitWeight": 25.0,
-  "HoneypotFlagThreshold": 4,
+  "HoneypotWindowSeconds": 1800,
+  "HoneypotFlagThreshold": 3,
   "ScoreDecayPerMinute": 0.15,
   "AlertAdminsOnFlag": true
 }
@@ -118,7 +124,8 @@ Suspicion tracking — the [honeypot + rate heuristics](/guide/protection/detect
 | `RateWindowSeconds` | `120` | Sliding window for the mining-rate count. |
 | `RateFlagThreshold` | `40` | Tracked-ore breaks within the window at/above this flag the player. |
 | `HoneypotHitWeight` | `25.0` | Suspicion added per honeypot hit. |
-| `HoneypotFlagThreshold` | `4` | Honeypot hits at/above this flag the player on their own. |
+| `HoneypotWindowSeconds` | `1800` | Sliding window over which honeypot hits count, like the ore-break rate. Stops the rare accidental hit from piling up over days into a flag. |
+| `HoneypotFlagThreshold` | `3` | Honeypot hits **within that window** at/above this flag the player on their own. |
 | `ScoreDecayPerMinute` | `0.15` | How fast the suspicion score fades over time. |
 | `AlertAdminsOnFlag` | `true` | Notify online admins when a player is flagged. |
 

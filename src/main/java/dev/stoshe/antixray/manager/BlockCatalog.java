@@ -26,6 +26,8 @@ public final class BlockCatalog {
     private volatile int[] fakeOreIds = new int[0];
     /** How many REAL fake-ore ids resolved (excludes the invisible fallback). 0 = fake field effectively off. */
     private volatile int realFakeCount = 0;
+    /** The valuable ores used for the rare honeypot traps (kept disjoint from the camouflage palette). */
+    private volatile int[] trapOreIds = new int[0];
 
     /** Membership table for the valuable NON-ORE blocks (chests, custom) we hide from X-ray. */
     private volatile IdTable protectedIds = IdTable.EMPTY;
@@ -125,6 +127,14 @@ public final class BlockCatalog {
             ores.add(id);
         });
 
+        // Trap (bait) palette — the valuable ores. Registered as known ores too, so a REAL one found in the
+        // terrain is masked like any other valuable rather than left on show.
+        LinkedHashSet<Integer> traps = new LinkedHashSet<>();
+        forEachMatch(config.Obfuscation.TrapOrePalette, (name, id) -> {
+            traps.add(id);
+            ores.add(id);
+        });
+
         this.fallbackHideId = resolve(config.Obfuscation.FallbackHideBlock);
         if (fallbackHideId == BlockType.UNKNOWN_ID) {
             fallbackHideId = BlockType.EMPTY_ID;
@@ -149,6 +159,7 @@ public final class BlockCatalog {
         this.hostRockIds = buildHostRocks();
         this.hideOreId = (hide == BlockType.UNKNOWN_ID) ? fallbackHideId : hide;
         this.fakeOreIds = palette.stream().mapToInt(Integer::intValue).toArray();
+        this.trapOreIds = traps.stream().mapToInt(Integer::intValue).toArray();
         this.realFakeCount = resolvedFakes;
         this.knownOreIds = ores.build();
         this.trackedOreNames = Set.copyOf(tracked);
@@ -159,8 +170,13 @@ public final class BlockCatalog {
         if (realFakeCount != lastLoggedFakeCount) {
             lastLoggedFakeCount = realFakeCount;
             if (realFakeCount > 0) {
-                Console.info("BlockCatalog: " + realFakeCount + " fake-ore ids, "
-                        + knownOreIds.size() + " ore ids resolved.");
+                Console.info("BlockCatalog: " + realFakeCount + " camouflage-ore ids, " + trapOreIds.length
+                        + " trap-ore ids, " + knownOreIds.size() + " ore ids resolved.");
+                if (trapOreIds.length == 0) {
+                    Console.warning("BlockCatalog: TrapOrePalette resolved to NOTHING — honeypot traps are "
+                            + "disabled, so detection falls back to the mining-rate heuristic alone. Fix the "
+                            + "ids with the Probe tool.");
+                }
             } else {
                 Console.warning("BlockCatalog: no fake-ore ids resolved yet "
                         + "(block assets may still be loading; will retry). If it stays 0, the fake-ore field "
@@ -401,6 +417,27 @@ public final class BlockCatalog {
     /** True if this numeric id is air (nothing rendered / see-through for exposure purposes). */
     public boolean isAir(int blockId) {
         return blockId == emptyId;
+    }
+
+    /** True if any bait ore resolved, i.e. honeypot traps can be placed at all. */
+    public boolean hasTrapOres() {
+        return trapOreIds.length > 0;
+    }
+
+    /** Number of resolved bait (trap) ore ids. */
+    public int trapOreCount() {
+        return trapOreIds.length;
+    }
+
+    /**
+     * Deterministic bait ore for a trap position. Salted differently from {@link #fakeOreFor} so a trap and the
+     * camouflage fake that would have gone in the same spot don't pick the same block.
+     */
+    public int trapOreFor(BlockKey key) {
+        if (trapOreIds.length == 0) {
+            return emptyId;
+        }
+        return trapOreIds[Math.floorMod(key.mix() ^ 0x2545F4914F6CDD1DL, trapOreIds.length)];
     }
 
     /** Deterministic fake ore for a position, so the client view is stable across rescans (no flicker). */

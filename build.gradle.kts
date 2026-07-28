@@ -6,9 +6,14 @@ plugins {
 }
 
 group = "dev.stoshe.antixray"
+
+// gradle.properties is the ONLY place the plugin version is written. From here it flows into the jar
+// name, the jar manifest, and — via the processResources token below — manifest.json, which the server
+// parses and AntiXray.getVersion() reads back at runtime. Never hardcode a fallback here: a stale one
+// would silently ship a jar whose reported version disagrees with the GitHub release it's compared to.
 val pluginVersion = (findProperty("version") as? String)
     ?.takeIf { it.isNotBlank() && it != "unspecified" }
-    ?: "1.1.0"
+    ?: throw GradleException("No plugin version set. Define 'version=x.y.z' in gradle.properties.")
 version = pluginVersion
 
 val javaVersion = (findProperty("javaVersion") as? String) ?: "25"

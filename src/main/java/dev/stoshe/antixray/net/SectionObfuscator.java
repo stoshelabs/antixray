@@ -9,9 +9,6 @@ import dev.stoshe.antixray.manager.BlockCatalog;
 import dev.stoshe.antixray.model.AntiXrayConfig;
 import dev.stoshe.antixray.model.BlockKey;
 
-import java.util.ArrayList;
-import java.util.List;
-
 /**
  * Builds an obfuscated copy of one 32&times;32&times;32 chunk section for the SEND-TIME path, reusing the
  * server's own encoder so the output is a byte-valid {@code SetChunk.data}. The section is deep-copied (via its
@@ -35,16 +32,10 @@ public final class SectionObfuscator {
         public final byte[] vanilla;
         /** The bytes to send in place of vanilla (== vanilla when nothing was hidden). */
         public final byte[] obfuscated;
-        /** Honeypot positions (world coords) placed for this section, for the detection layer. */
-        public final List<BlockKey> traps;
-        /** Positions where a REAL ore/valuable was masked as rock — must be revealed when mining exposes them. */
-        public final List<BlockKey> masked;
 
-        Result(byte[] vanilla, byte[] obfuscated, List<BlockKey> traps, List<BlockKey> masked) {
+        Result(byte[] vanilla, byte[] obfuscated) {
             this.vanilla = vanilla;
             this.obfuscated = obfuscated;
-            this.traps = traps;
-            this.masked = masked;
         }
     }
 
@@ -72,14 +63,17 @@ public final class SectionObfuscator {
             int maxY = cfg.MaxY;
             int hideId = catalog.hideOreId();
 
-            List<BlockKey> traps = new ArrayList<>();
-            List<BlockKey> masked = new ArrayList<>();
             boolean edited = false;
             // Decoys are per-SECTION here (send-time serializes one section at a time): at most one buried
-            // chest per section, and only in a small share of sections. Same low-count intent as the classic path.
+            // chest per section, and only in a small share of sections. Its slot inside the section comes from
+            // ObfuscationManager.decoyLocalIndex, the same derivation the classic path and the break handler
+            // use, so all three agree on where a decoy is without anyone recording it.
+            int trapLocal = dev.stoshe.antixray.manager.ObfuscationManager.trapLocalIndex(cx, sy, cz);
+            boolean placeTrap = catalog.hasTrapOres()
+                    && sectionGateSelected(cx, sy, cz, cfg.TrapChancePerSection, 0x14057B7EF767814FL);
+            int decoyLocal = dev.stoshe.antixray.manager.ObfuscationManager.decoyLocalIndex(cx, sy, cz);
             boolean placeDecoy = catalog.hasDecoys()
-                    && sectionDecoySelected(cx, sy, cz, cfg.ProtectedDecoyChunkChance);
-            boolean decoyDone = false;
+                    && sectionGateSelected(cx, sy, cz, cfg.ProtectedDecoyChunkChance, 0x27D4EB2F165667C5L);
 
             for (int lx = 0; lx < size; lx++) {
                 for (int lz = 0; lz < size; lz++) {
@@ -99,30 +93,28 @@ public final class SectionObfuscator {
                         // before any occlusion walk. It matters more here: an occlusion read that crosses the
                         // section border falls through to world.getBlock.
                         int target;
-                        // See ObfuscationManager.revealAround: a mask has to be undone the moment mining
-                        // exposes the block, so every masked position is reported back to the detection layer.
-                        boolean mask = false;
-                        boolean trap = false;
                         if (catalog.isKnownOreId(rid)) {
                             if (isExposed(world, copy, baseX, baseY, baseZ, wx, wy, wz, catalog)) {
                                 continue; // a legit player can see this ore — leave it alone
                             }
                             target = hideId;
-                            mask = true;
                         } else if (catalog.isProtectedBlock(rid)) {
                             if (isExposed(world, copy, baseX, baseY, baseZ, wx, wy, wz, catalog)) {
                                 continue;
                             }
                             // Real chest/valuable buried in terrain (enclosed): mask it as rock.
                             target = catalog.hideProtectedId();
-                            mask = true;
                         } else {
                             if (!catalog.isHostRock(rid)) {
                                 continue;
                             }
-                            // One buried decoy chest for this section (if selected), else a distributed fake ore.
-                            boolean decoy = placeDecoy && !decoyDone;
-                            if (!decoy && !fieldSelected(wx, wy, wz, cfg.FakeOreDensity, 0x5DEECE66DL)) {
+                            // This section's baits (trap ore / decoy chest) win over the camouflage field.
+                            boolean trap = placeTrap && dev.stoshe.antixray.manager.ObfuscationManager
+                                    .isSectionSlot(trapLocal, wx, wy, wz);
+                            boolean decoy = !trap && placeDecoy && dev.stoshe.antixray.manager.ObfuscationManager
+                                    .isSectionSlot(decoyLocal, wx, wy, wz);
+                            if (!trap && !decoy
+                                    && !fieldSelected(wx, wy, wz, cfg.FakeOreDensity, 0x5DEECE66DL)) {
                                 continue;
                             }
                             // isBuried with depth >= 1 already covers the 6-neighbour exposure test.
@@ -130,19 +122,12 @@ public final class SectionObfuscator {
                                 continue;
                             }
                             BlockKey here = new BlockKey(wx, wy, wz);
-                            target = decoy ? catalog.decoyFor(here) : catalog.fakeOreFor(here);
-                            decoyDone |= decoy;
-                            trap = true;
+                            target = trap ? catalog.trapOreFor(here)
+                                    : decoy ? catalog.decoyFor(here)
+                                    : catalog.fakeOreFor(here);
                         }
                         if (target == rid || catalog.isAir(target)) {
                             continue;
-                        }
-                        BlockKey key = new BlockKey(wx, wy, wz);
-                        if (trap) {
-                            traps.add(key);
-                        }
-                        if (mask) {
-                            masked.add(key);
                         }
                         // NB: BlockSection has NO set(x,y,z,block) 4-arg overload. The 4-arg
                         // set(int,int,int,int) is set(position,block,rotation,filler) — a positional
@@ -159,7 +144,7 @@ public final class SectionObfuscator {
             }
 
             byte[] obf = edited ? copy.serializeForPacket() : vanilla;
-            return new Result(vanilla, obf, traps, masked);
+            return new Result(vanilla, obf);
         } catch (Throwable t) {
             return null; // caller sends vanilla untouched
         }
@@ -203,15 +188,18 @@ public final class SectionObfuscator {
 
     /** Deterministic density gate for the honeypot scatter (stable per position, no flicker). The salt keeps
      * the ore-fake field and the decoy field independent so they don't collide on the same positions. */
-    /** Deterministic per-SECTION gate: does this section get its one buried decoy chest? Stable across resends. */
-    private static boolean sectionDecoySelected(int cx, int sy, int cz, double chance) {
+    /**
+     * Deterministic per-SECTION gate: does this section get one of the rare baits? The salt selects which bait
+     * (trap ore / decoy chest) and matches ObfuscationManager's, so both paths place them identically.
+     */
+    private static boolean sectionGateSelected(int cx, int sy, int cz, double chance, long salt) {
         if (chance <= 0.0) {
             return false;
         }
         if (chance >= 1.0) {
             return true;
         }
-        double frac = ((new BlockKey(cx, sy, cz).mix() ^ 0x27D4EB2F165667C5L) >>> 11) * 0x1.0p-53;
+        double frac = ((new BlockKey(cx, sy, cz).mix() ^ salt) >>> 11) * 0x1.0p-53;
         return frac < chance;
     }
 

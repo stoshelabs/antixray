@@ -15,7 +15,6 @@ import com.hypixel.hytale.server.core.universe.world.chunk.WorldChunk;
 import dev.stoshe.antixray.AntiXray;
 import dev.stoshe.antixray.manager.BlockCatalog;
 import dev.stoshe.antixray.model.AntiXrayConfig;
-import dev.stoshe.antixray.model.BlockKey;
 import dev.stoshe.antixray.util.Console;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -65,15 +64,10 @@ public final class SendTimeObfuscator {
         /** 64-bit hash of the vanilla bytes at compute time — cheap freshness check without storing them. */
         final long vanillaHash;
         final byte[] obf;
-        final List<BlockKey> traps;
-        /** Positions where a real ore/valuable was masked — armed per player so mining can reveal them. */
-        final List<BlockKey> masked;
 
-        Cached(long vanillaHash, byte[] obf, List<BlockKey> traps, List<BlockKey> masked) {
+        Cached(long vanillaHash, byte[] obf) {
             this.vanillaHash = vanillaHash;
             this.obf = obf;
-            this.traps = traps;
-            this.masked = masked;
         }
     }
 
@@ -153,8 +147,7 @@ public final class SendTimeObfuscator {
             if (r == null) {
                 return;
             }
-            cacheFor(world.getName()).put(sectionKey(cx, sy, cz),
-                    new Cached(hash(r.vanilla), r.obfuscated, r.traps, r.masked));
+            cacheFor(world.getName()).put(sectionKey(cx, sy, cz), new Cached(hash(r.vanilla), r.obfuscated));
         } catch (Throwable t) {
             // best-effort; the filter falls back to vanilla on a miss
         }
@@ -224,12 +217,8 @@ public final class SendTimeObfuscator {
             } finally {
                 inSwap.set(Boolean.FALSE);
             }
-            if (!e.traps.isEmpty()) {
-                plugin.getObfuscationManager().registerTraps(pr.getUuid(), e.traps);
-            }
-            if (!e.masked.isEmpty()) {
-                plugin.getObfuscationManager().registerMasked(pr.getUuid(), e.masked);
-            }
+            // Nothing to arm per player: honeypot positions and masks are recomputed from the position when a
+            // break needs them (see ObfuscationManager.isArmedFake), so both paths share one source of truth.
             return DROP;
         } catch (Throwable t) {
             return KEEP; // never break chunk delivery

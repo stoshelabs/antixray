@@ -9,8 +9,8 @@
 
 <p align="center">
   <a href="https://stoshelabs.github.io/antixray/"><img src="https://img.shields.io/badge/docs-online-6B2BEB?style=for-the-badge" alt="Documentation"></a>
-  <img src="https://img.shields.io/badge/version-1.1.0-2ea44f?style=for-the-badge" alt="version 1.1.0">
-  <img src="https://img.shields.io/badge/Hytale-server%20plugin-12B3A6?style=for-the-badge" alt="Hytale server plugin">
+  <a href="https://github.com/stoshelabs/antixray/releases/latest"><img src="https://img.shields.io/github/v/release/stoshelabs/antixray?style=for-the-badge&label=version&color=2ea44f" alt="Latest release"></a>
+  <img src="https://img.shields.io/badge/Hytale%20server-%3E%3D0.5.6%20%3C0.6.0-12B3A6?style=for-the-badge" alt="Hytale server >=0.5.6 <0.6.0">
 </p>
 
 <p align="center">
@@ -43,7 +43,7 @@ honest players never see or feel a thing.
 
 ## Quick start
 
-1. Drop `AntiXray-1.1.0.jar` into your server's `mods/` folder.
+1. Drop `AntiXray-<version>.jar` from the **[latest release](https://github.com/stoshelabs/antixray/releases/latest)** into your server's `mods/` folder. Requires a Hytale server in the `>=0.5.6 <0.6.0` range.
 2. Start the server once to generate `config.json` and the language files.
 3. Run `/antixray` (alias `/ax`) and check **Status → Fake-ore ids resolved** is greater than `0`.
 

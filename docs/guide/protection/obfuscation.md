@@ -36,7 +36,7 @@ For each protected player, AntiXray periodically looks at the blocks around them
 2. For every solid, non-air block in range:
    - **Air, or exposed to air?** Skip it — a player can see it.
    - **A known real ore, fully enclosed?** Replace it (in this client) with plain rock (`HideRealOreAs`).
-   - **Plain host rock (e.g. `Rock_*`), buried at least `CoverDepth` deep, and selected by the density gate?** Turn it into a random fake ore from `FakeOrePalette` — a honeypot.
+   - **Plain host rock (e.g. `Rock_*`), buried at least `CoverDepth` deep?** If it is the section's rare [trap](/guide/protection/detection) slot, turn it into a valuable ore from `TrapOrePalette`; otherwise, if the density gate picks it, turn it into a common ore from `FakeOrePalette` — camouflage.
 3. The batch is sent to that one player. Work is throttled to `MaxChunksPerTick` new chunks per second, so it spreads out as the player moves and never spikes.
 
 Each new area is done once per client; when the player re-loads the chunk (relog, teleport), it's re-applied.
@@ -45,7 +45,7 @@ Each new area is done once per client; when the player re-loads the chunk (relog
 
 Two knobs shape what X-ray sees:
 
-- **`FakeOrePalette`** — the set of ores honeypots are drawn from. A wide, plausible palette means X-ray can't statistically tell injected fakes from anything else. The default `["Ore_*"]` is a wildcard that auto-discovers every ore your world registered.
+- **`FakeOrePalette`** — the ores the camouflage field is drawn from. Common metals by default, so that every *valuable* ore an X-ray user sees is one of the rare [traps](/guide/protection/detection) instead of noise.
 - **`FakeOreDensity`** — the fraction of hidden host rock turned into a honeypot (evenly distributed, and *stable per position* so there's no flicker). Real ores are **always** hidden regardless of density; density only controls how thick the decoy field is.
 
 ::: warning Denser is not better

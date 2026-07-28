@@ -43,7 +43,7 @@
     "title": "Status",
     "obfuscation": "Obfuscation: %state%",
     "detection": "Detection: %state%",
-    "fake_ores": "Fake-ore ids resolved: %n%",
+    "fake_ores": "Ore ids resolved: %n% camouflage, %t% trap",
     "protected": "Protected blocks: %n% ids, %d% decoys",
     "tracked": "Players tracked: %n%",
     "worlds": "Active worlds: %worlds%",

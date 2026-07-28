@@ -1,23 +1,35 @@
 # Honeypots & Detection
 
-Obfuscation makes X-ray *useless*. Detection makes it *dangerous*. The same fake-ore field that hides your real ores is also a trap: the only way to find and dig a fully-enclosed fake is to see through walls.
+Obfuscation makes X-ray *useless*. Detection makes it *dangerous*: scattered through the fake-ore field are rare **traps** — valuable ores that only exist on a cheater's screen.
 
 Detection is a **best-effort, secondary** layer — it never punishes anyone automatically. It builds a suspicion picture and alerts you; the judgement stays human.
 
 ## The honeypot
 
-A **honeypot** is a fake ore placed in fully-enclosed host rock, buried `CoverDepth` blocks deep. The important property:
+The fake ores you see through an X-ray pack come in **two tiers**, and only one of them is a trap.
 
-> A legitimate player physically cannot see a fully-enclosed block. So tunnelling straight to one, and breaking it, is something only X-ray makes possible.
+| | Camouflage field | Trap |
+|---|---|---|
+| Config | `FakeOrePalette`, `FakeOreDensity` | `TrapOrePalette`, `TrapChancePerSection` |
+| Ores used | **common** metals (copper, iron) | **valuable** ores (gold, mithril, …) |
+| How many | hundreds per chunk | ~one per 12 chunk sections |
+| Mining near it | **revealed** — turns back into real rock before you can reach it | **never revealed** |
+| Breaking it | nothing | **honeypot hit** |
 
-When a tracked player breaks a block that was a honeypot **for them**, AntiXray records a **honeypot hit** — the strongest, lowest-false-positive signal it has. (Because the trap is per-player and only placed where the player couldn't legitimately see it, an honest miner essentially never trips one by chance.)
+The camouflage field's job is to drown the real ore layout in plausible noise, and it steps out of the way as soon as anyone mines close to it — an honest player never even learns it was there.
+
+The trap's job is to be the one thing a cheater can actually take. Because real valuables are masked as plain rock and the camouflage field is common metals only:
+
+> **Every valuable ore an X-ray user can see is fake.** They cannot tell a trap from anything else, because there is nothing else.
+
+An honest miner *can* still tunnel blind into a trap — that is the honest limit of any honeypot. It is made rare on purpose, and the flag is a **rate**, not a lifetime tally: several hits inside `HoneypotWindowSeconds`. A cheater walks from trap to trap; unlucky miners find one an hour.
 
 ## The two heuristics
 
 AntiXray combines two independent signals into one score:
 
 ### 1. Honeypot hits
-Breaking fully-enclosed fake ores. Each hit adds `HoneypotHitWeight` to the player's suspicion score. Reaching `HoneypotFlagThreshold` hits flags the player on its own — this is the primary, high-confidence signal.
+Breaking trap ores. Each hit adds `HoneypotHitWeight` to the player's suspicion score, and reaching `HoneypotFlagThreshold` hits **within `HoneypotWindowSeconds`** flags the player on its own — the primary signal.
 
 ### 2. Mining rate
 How many **tracked valuable ores** (`TrackedOres`) a player breaks within a sliding window of `RateWindowSeconds`. Digging an implausible number of valuable ores in a short window — the classic X-ray fingerprint — pushes the score up, and crossing `RateFlagThreshold` in the window flags the player. This catches cheats that avoid the honeypots but still beeline real ore.
@@ -50,9 +62,9 @@ The **Suspects** tab of the admin panel lists tracked players **most-suspicious 
 
 Detection defaults are conservative to avoid false positives. Adjust in `config.json` under `Detection` (see the [Config Reference](/guide/setup/config#detection)):
 
-- **Too many alerts?** Raise `HoneypotFlagThreshold` / `RateFlagThreshold`, or raise `ScoreDecayPerMinute` so scores fade faster.
-- **Want it stricter?** Lower those thresholds, or raise `HoneypotHitWeight` so a single trap counts for more.
-- **Honeypots not triggering?** Raise `Obfuscation.FakeOreDensity` for a thicker field, and make sure your `FakeOrePalette` ids [resolve](/guide/setup/block-ids).
+- **Too many alerts?** Lower `Obfuscation.TrapChancePerSection` (fewer traps to stumble on), raise `HoneypotFlagThreshold` / `RateFlagThreshold`, or shorten `HoneypotWindowSeconds`.
+- **Want it stricter?** Raise `TrapChancePerSection` so traps are denser, lower the thresholds, or raise `HoneypotHitWeight`.
+- **Honeypots never triggering?** Check the **Status** tab: if `TrapOrePalette` resolved to 0 ids there are no traps at all. Also make sure `FakeOrePalette` (camouflage) and `TrapOrePalette` (bait) stay **disjoint** — putting valuables in the camouflage field buries the traps among a hundred thousand identical baits.
 
 ::: warning Detection is a signal, not a verdict
 Treat flags as leads. Confirm with spectate before acting — a flagged score means "worth a look," not "guilty."

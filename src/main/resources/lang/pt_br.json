@@ -43,7 +43,7 @@
     "title": "Status",
     "obfuscation": "Ofuscação: %state%",
     "detection": "Detecção: %state%",
-    "fake_ores": "Ids de minério falso resolvidos: %n%",
+    "fake_ores": "Ids de minério resolvidos: %n% camuflagem, %t% isca",
     "protected": "Blocos protegidos: %n% ids, %d% iscas",
     "tracked": "Jogadores rastreados: %n%",
     "worlds": "Mundos ativos: %worlds%",

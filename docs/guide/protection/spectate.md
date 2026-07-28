@@ -17,7 +17,13 @@ The list of tracked players, **most-suspicious first**. Each row shows the playe
 - **Refresh** re-sorts and re-reads the current suspicion data.
 - **Spectate** attaches your camera to that player (below).
 
-## Live spectate
+## Live spectate <Badge type="warning" text="changes in 0.6" />
+
+::: warning Replaced by native spectate in server 0.6
+Everything in this section is a workaround built on the 0.5.x packet API: the server has no spectator mode, so AntiXray drives a custom camera, teleports your body along, and stashes your inventory by hand. Hytale **0.6.0 ships native spectate**, and AntiXray will switch to it — the follow-camera, the [hotbar tools](#spectator-hud-hotbar-tools) and the inventory stash all go away with it.
+
+Nothing to do today: the plugin's manifest declares `{{SERVER_VERSION}}`, so it will not load on 0.6 until there's a release that targets it. See [Requirements](/guide/intro/getting-started#requirements).
+:::
 
 Spectate is a **real server-side follow camera**, not a teleport. When you click **Spectate** on a suspect:
 
@@ -41,7 +47,7 @@ A flag is a lead. Spectating a suspect for a minute of mining is usually enough 
 
 Flip between them live with hotbar **`2`**, or panel → **Tools → Camera view**. The starting mode is `Spectate.FirstPerson`.
 
-## Spectator HUD & hotbar tools
+## Spectator HUD & hotbar tools <Badge type="warning" text="changes in 0.6" />
 
 While spectating you get a HUD showing who you're watching, the camera mode, and their live detection score.
 

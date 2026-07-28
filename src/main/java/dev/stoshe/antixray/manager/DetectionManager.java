@@ -17,11 +17,13 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Suspicion tracking. Two heuristics feed a per-player score:
+ * Suspicion tracking. Two heuristics feed a per-player score, both counted over sliding windows:
  * <ul>
- *   <li><b>Mining rate</b> — tracked-ore breaks inside a sliding time window (blatant fast mining).</li>
- *   <li><b>Honeypot hits</b> — breaking a fully-enclosed fake ore, which a legitimate player (who only sees
- *       exposed faces) has no way of knowing was there.</li>
+ *   <li><b>Mining rate</b> — tracked-ore breaks inside {@code RateWindowSeconds} (blatant fast mining).</li>
+ *   <li><b>Honeypot hits</b> — breaking one of the rare trap ores inside {@code HoneypotWindowSeconds}. Real
+ *       valuables are masked as rock and the camouflage field is common metals only, so every valuable ore an
+ *       X-ray user can see is bait. An honest miner can still tunnel blind into one, which is why this is a
+ *       RATE, not a lifetime tally: a cheater walks from trap to trap, an unlucky miner finds one an hour.</li>
  * </ul>
  * The score decays over time, so a player who stops behaving suspiciously drifts back down the list.
  */
@@ -74,10 +76,12 @@ public final class DetectionManager {
         Record r = record(pr);
         long now = System.currentTimeMillis();
         synchronized (r) {
-            r.honeypotHits++;
+            r.honeypotTimes.addLast(now);
+            r.totalHoneypots++;
             r.lastActivity = now;
+            pruneWindow(r, now);
         }
-        Console.warning("Honeypot hit: " + pr.getUsername() + " broke a fake ore (real=" + realBlockName + ").");
+        Console.warning("Honeypot hit: " + pr.getUsername() + " broke a trap ore (real=" + realBlockName + ").");
         maybeFlag(pr, r, true);
     }
 
@@ -86,8 +90,10 @@ public final class DetectionManager {
         int ores;
         int hits;
         synchronized (r) {
+            long now = System.currentTimeMillis();
+            pruneWindow(r, now);
             ores = r.oreTimes.size();
-            hits = r.honeypotHits;
+            hits = r.honeypotTimes.size();
             nowFlagged = ores >= cfg().RateFlagThreshold || hits >= cfg().HoneypotFlagThreshold;
         }
         if (nowFlagged && !r.flagged) {
@@ -141,11 +147,14 @@ public final class DetectionManager {
                 r.oreTimes.addLast(now);
             }
             r.totalOres += Math.max(0, oreBreaks);
-            r.honeypotHits += Math.max(0, honeypotHits);
+            for (int i = 0; i < Math.max(0, honeypotHits); i++) {
+                r.honeypotTimes.addLast(now);
+            }
+            r.totalHoneypots += Math.max(0, honeypotHits);
             r.lastActivity = now;
             pruneWindow(r, now);
             ores = r.oreTimes.size();
-            hits = r.honeypotHits;
+            hits = r.honeypotTimes.size();
         }
         Console.warning("[TEST] Simulated suspect '" + name + "' (+" + oreBreaks + " ores, +"
                 + honeypotHits + " honeypot hits).");
@@ -188,7 +197,10 @@ public final class DetectionManager {
                 r.oreTimes.addLast(now);
                 r.totalOres++;
             }
-            r.honeypotHits = Math.max(r.honeypotHits, cfg().HoneypotFlagThreshold);
+            while (r.honeypotTimes.size() < cfg().HoneypotFlagThreshold) {
+                r.honeypotTimes.addLast(now);
+                r.totalHoneypots++;
+            }
             r.lastActivity = now;
         }
         Console.warning("[TEST] Force-flagged real player '" + pr.getUsername() + "' as a suspect.");
@@ -224,10 +236,11 @@ public final class DetectionManager {
         synchronized (r) {
             pruneWindow(r, now);
             int ores = r.oreTimes.size();
-            double raw = r.honeypotHits * cfg().HoneypotHitWeight + ores;
+            int hits = r.honeypotTimes.size();
+            double raw = hits * cfg().HoneypotHitWeight + ores;
             double decayed = applyDecay(raw, r.lastActivity, now);
-            boolean flagged = ores >= cfg().RateFlagThreshold || r.honeypotHits >= cfg().HoneypotFlagThreshold;
-            return new Snapshot(r.uuid, r.name, ores, r.honeypotHits, r.totalOres, decayed, flagged, r.lastActivity);
+            boolean flagged = ores >= cfg().RateFlagThreshold || hits >= cfg().HoneypotFlagThreshold;
+            return new Snapshot(r.uuid, r.name, ores, hits, r.totalOres, decayed, flagged, r.lastActivity);
         }
     }
 
@@ -237,11 +250,19 @@ public final class DetectionManager {
         return raw * factor;
     }
 
+    /**
+     * Drops entries that have aged out of their sliding window. Honeypot hits get their own, much longer window:
+     * they used to be a lifetime counter, so the rare accidental hit — an honest miner tunnelling blind into a
+     * trap — added up over days until it flagged them on its own. A cheater's hits arrive in minutes.
+     */
     private void pruneWindow(Record r, long now) {
-        long cutoff = now - cfg().RateWindowSeconds * 1000L;
-        Deque<Long> q = r.oreTimes;
-        while (!q.isEmpty() && q.peekFirst() < cutoff) {
-            q.pollFirst();
+        long oreCutoff = now - cfg().RateWindowSeconds * 1000L;
+        while (!r.oreTimes.isEmpty() && r.oreTimes.peekFirst() < oreCutoff) {
+            r.oreTimes.pollFirst();
+        }
+        long hitCutoff = now - Math.max(1, cfg().HoneypotWindowSeconds) * 1000L;
+        while (!r.honeypotTimes.isEmpty() && r.honeypotTimes.peekFirst() < hitCutoff) {
+            r.honeypotTimes.pollFirst();
         }
     }
 
@@ -257,8 +278,10 @@ public final class DetectionManager {
         final UUID uuid;
         volatile String name;
         final Deque<Long> oreTimes = new ArrayDeque<>();
-        int honeypotHits;
+        /** Timestamps of honeypot hits, windowed like oreTimes (see pruneWindow). */
+        final Deque<Long> honeypotTimes = new ArrayDeque<>();
         long totalOres;
+        long totalHoneypots;
         volatile long lastActivity;
         volatile boolean flagged;
 

@@ -7,7 +7,7 @@
     { "Name": "Gustavo Will", "Url": "https://github.com/gitgusilva" }
   ],
   "Main": "dev.stoshe.antixray.AntiXray",
-  "ServerVersion": "*",
+  "ServerVersion": ">=0.5.6 <0.6.0",
   "Description": "AntiXray: packet-level ore obfuscation plus a fake-ore honeypot to detect and catch X-ray cheaters, with an admin suspect panel and live spectate.",
   "IncludesAssetPack": true
 }

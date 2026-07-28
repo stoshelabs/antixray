@@ -48,9 +48,17 @@ public final class AntiXrayConfig {
         /** Blocks above AND below the player to obfuscate (a slab that follows them, not the whole column). */
         public int VerticalRadius = 32;
         /** Max new chunks obfuscated per player per second (spreads the load as they move). */
-        public int MaxChunksPerTick = 8;
-        /** Absolute ceiling: never obfuscate above this Y (keeps the surface/sky untouched). */
-        public int MaxY = 128;
+        public int MaxChunksPerTick = 16;
+        /**
+         * Absolute ceiling on the Y this ever obfuscates. This is only a CPU limiter, NOT what keeps the surface
+         * clean: every fake requires a fully-buried block (see CoverDepth), so exposed surface and sky blocks
+         * are skipped no matter how high this is. Set it above the tallest terrain a player will stand on —
+         * 128 was BELOW the surface on ordinary worlds, so a player walking around at, say, y140 had everything
+         * at and above their eye level left unprotected (the field only reached the rock well below them),
+         * which reads exactly like "the plugin only works in some chunks". Lower it only to save CPU on a
+         * server where play is strictly underground.
+         */
+        public int MaxY = 256;
         /**
          * How many solid blocks must sit between a fake ore and any air (along each axis). 1 = just not on a
          * visible face; 2+ = buried deeper so a fake never shows up right behind something you can see.
@@ -66,7 +74,15 @@ public final class AntiXrayConfig {
          * so honeypots never land in dirt/gravel/sand. Empty = any hidden block.
          */
         public List<String> HoneypotHostPrefixes = List.of("Rock_");
-        /** Cap on trap positions tracked per player (memory guard for the detection heuristic). */
+        /**
+         * @deprecated No longer used, and kept only so existing config files still parse. Honeypot positions
+         *     used to be remembered per player and this capped that list — but one player's field is far larger
+         *     than any sane cap, so obfuscation stopped dead a few seconds after they joined and only the
+         *     chunks scanned before that had fakes. The field is now recomputed from the position when a break
+         *     needs it (it is a pure function of the block and its surroundings), so nothing is stored and
+         *     nothing has to be capped.
+         */
+        @Deprecated
         public int MaxTrapsPerPlayer = 40000;
         /** Radius (blocks) used only by the /antixray test and /antixray xray view modes. */
         public int RadiusBlocks = 24;
@@ -85,13 +101,38 @@ public final class AntiXrayConfig {
          */
         public double FakeOreDensity = 0.03;
         /**
-         * Block names for the random fake-ore field. Real hidden ores are re-shown as one of these (masking
-         * which metal they are), and a share of hidden plain rock (see FakeOreDensity) is turned into one too,
-         * so X-ray sees a field of indistinguishable ores. Entries are exact ids OR "Prefix*" wildcards; the
-         * default "Ore_*" auto-discovers EVERY ore variant registered in your world (no manual id list, no
-         * "ids don't match my build" problem). Narrow it (e.g. "Ore_Gold_*") or list exact ids if you prefer.
+         * The CAMOUFLAGE palette: block names for the dense fake-ore field that fills hidden rock, so X-ray sees
+         * a plausible-but-worthless ore layout instead of the real one. Entries are exact ids OR "Prefix*"
+         * wildcards.
+         *
+         * <p>Default is the COMMON metals only. That is deliberate and is what makes the honeypot work: real
+         * valuable ores are masked as rock, so once the camouflage is common-only, <em>every valuable ore an
+         * X-ray user can see is a trap</em> ({@link #TrapOrePalette}). Putting valuables in here as well would
+         * bury the traps under a hundred thousand identical-looking baits and detection would never fire.
          */
-        public List<String> FakeOrePalette = List.of("Ore_*");
+        public List<String> FakeOrePalette = List.of("Ore_Copper_*", "Ore_Iron_*");
+        /**
+         * The BAIT palette: valuable ores used for the rare honeypot traps. Entries are exact ids OR "Prefix*"
+         * wildcards; keep it disjoint from {@link #FakeOrePalette} and aligned with Detection.TrackedOres.
+         *
+         * <p>Unlike the camouflage field, a trap is never revealed when mining approaches it — it is the one
+         * thing a cheater can actually break, and breaking it is the honeypot hit. Empty = traps disabled.
+         */
+        public List<String> TrapOrePalette = List.of(
+                "Ore_Gold_*", "Ore_Silver_*", "Ore_Cobalt_*", "Ore_Mithril_*",
+                "Ore_Adamantite_*", "Ore_Thorium_*", "Ore_Onyxium_*", "Ore_Prisma");
+        /**
+         * Chance (0..1) that an obfuscated 32&times;32&times;32 SECTION contains ONE honeypot trap — the whole
+         * trap count, deliberately tiny compared with the camouflage field.
+         *
+         * <p>This is the single knob that trades detection speed against false positives, because a trap is
+         * never revealed: an X-ray user sees every trap through the rock and beelines to them, while an honest
+         * miner can only find one by tunnelling into it blind. At the default ~0.08 (one trap per ~12 sections)
+         * a player digging 3000 blocks has roughly a 1-in-8 chance of stumbling on a single trap, and
+         * Detection.HoneypotFlagThreshold hits inside Detection.HoneypotWindowSeconds are needed to flag.
+         * Raise it for faster detection on a server you watch closely; lower it if honest miners get flagged.
+         */
+        public double TrapChancePerSection = 0.08;
         /** Block name a hidden block is masked with if the fake-ore palette can't be resolved. */
         public String FallbackHideBlock = "Rock_Stone";
         /**
@@ -155,10 +196,19 @@ public final class AntiXrayConfig {
         public int RateWindowSeconds = 120;
         /** Tracked-ore breaks within the window at/above this count flag the player as a suspect. */
         public int RateFlagThreshold = 40;
-        /** Weight of a honeypot hit (breaking a fully-enclosed fake ore) in the suspicion score. */
+        /** Weight of a honeypot hit (breaking one of the rare trap ores) in the suspicion score. */
         public double HoneypotHitWeight = 25.0;
-        /** Honeypot hits at/above this count flag the player as a suspect on their own. */
-        public int HoneypotFlagThreshold = 4;
+        /**
+         * Sliding window (seconds) over which honeypot hits are counted, exactly like the ore-break rate.
+         *
+         * <p>Honeypot hits used to accumulate for the lifetime of the session, so the rare accident — an honest
+         * miner tunnelling blind into a trap — added up over hours or days until it crossed the threshold on its
+         * own. What separates a cheater from an unlucky miner is not the total, it is how many they find in a
+         * short time: an X-ray user walks from trap to trap.
+         */
+        public int HoneypotWindowSeconds = 1800;
+        /** Honeypot hits within {@link #HoneypotWindowSeconds} at/above this count flag the player on their own. */
+        public int HoneypotFlagThreshold = 3;
         /** Suspicion score decays by this fraction per minute of inactivity. */
         public double ScoreDecayPerMinute = 0.15;
         /** Broadcast an alert to online admins the first time a player crosses a flag threshold. */

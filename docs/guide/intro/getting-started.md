@@ -2,17 +2,30 @@
 
 AntiXray is a drop-in JAR. Install it, confirm one number in the Status tab, and you're protected — the defaults discover your server's ore ids on their own.
 
+## Requirements
+
+| | |
+| --- | --- |
+| **Hytale server** | `0.5.6` or any later `0.5.x` — the manifest declares `{{SERVER_VERSION}}` |
+| **Java** | 25 (the same runtime the server ships with) |
+
+AntiXray reads and rewrites chunk packets, so it is tied to the server build it was compiled against. The manifest range is enforced by the server itself: on a version outside it the plugin is **refused at load** with an incompatibility message rather than half-working.
+
+::: warning Server 0.6 is not supported yet
+`0.6.0` introduces **native spectate**, which replaces the custom follow-camera this plugin implements. The range deliberately stops before it — when 0.6 ships, AntiXray gets a release that targets it. Anything in these docs that 0.6 changes carries a <Badge type="warning" text="changes in 0.6" /> badge.
+:::
+
 ## 1. Install
 
-1. Drop `AntiXray-1.1.0.jar` into your server's `mods/` folder.
+1. Drop `AntiXray-{{PLUGIN_VERSION}}.jar` into your server's `mods/` folder.
 2. Start the server once. AntiXray creates its data folder (`mods/Stoshe_AntiXray/`) with a `config.json` and the `lang/` files.
-3. Confirm it loaded — the console prints the `AntiXray v1.1.0` banner on startup.
+3. Confirm it loaded — the console prints the `AntiXray v{{PLUGIN_VERSION}}` banner on startup.
 
 Protection starts immediately. Step 2 is the one check worth doing.
 
 ## 2. Check the ids resolved
 
-Ore block ids are **not** universal — they depend on the host rock and your server build. AntiXray handles this with wildcards: the default `FakeOrePalette` of `["Ore_*"]` matches every ore your world actually registered, so there's normally nothing to configure.
+Ore block ids are **not** universal — they depend on the host rock and your server build. AntiXray handles this with wildcards: the defaults (`["Ore_Copper_*", "Ore_Iron_*"]` for the camouflage field, the valuable ores for `TrapOrePalette`) match whatever your world actually registered, so there's normally nothing to configure.
 
 Confirm it:
 

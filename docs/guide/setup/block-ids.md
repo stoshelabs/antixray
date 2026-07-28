@@ -13,11 +13,11 @@ If an id in `FakeOrePalette` or `TrackedOres` doesn't resolve it's skipped with 
 You don't have to maintain an id list. Entries in `FakeOrePalette` and `TrackedOres` can be exact ids **or `"Prefix*"` wildcards**, which are matched against the blocks your server has actually registered:
 
 ```json
-"FakeOrePalette": ["Ore_*"],
+"FakeOrePalette": ["Ore_Copper_*", "Ore_Iron_*"],
 "TrackedOres": ["Ore_Gold_*", "Ore_Mithril_*", "Ore_Adamantite_*"]
 ```
 
-`"Ore_*"` picks up every ore variant in your world, whatever it's called and whatever rock it sits in. **These are the defaults**, so on most servers block ids need no attention at all — just check the Status tab.
+A prefix like `"Ore_Copper_*"` picks up every variant of that ore in your world, whatever rock it sits in. **These are the defaults**, so on most servers block ids need no attention at all — just check the Status tab.
 
 ::: warning Asset ids aren't ready at startup
 Block ids can't be resolved during plugin startup — Hytale fills its asset map *after* setup, and it keeps growing as new biomes load. AntiXray re-resolves ids automatically as they appear, so a freshly discovered ore may take a moment (or a chunk load in the right biome) to register.
@@ -59,7 +59,8 @@ Probe mode logs the exact id of every block **you** break. You need it when you 
 
 The keys that take block ids:
 
-- **`Obfuscation.FakeOrePalette`** — the ores honeypots are drawn from. Wide and plausible is good.
+- **`Obfuscation.FakeOrePalette`** — the ores the camouflage field is drawn from (common metals).
+- **`Obfuscation.TrapOrePalette`** — the valuable ores used as bait. Keep disjoint from the camouflage palette.
 - **`Obfuscation.HideRealOreAs`** — the plain rock real ores are hidden as (default `Rock_Stone`). Make sure this one resolves.
 - **`Obfuscation.HoneypotHostPrefixes`** — id prefixes that count as "real rock" a honeypot may replace (default `["Rock_"]`), so fakes never land in dirt, gravel, or sand.
 - **`Detection.TrackedOres`** — the valuable ores the mining-rate heuristic counts. Copper and iron are left out by default so normal mining of the common metals doesn't false-flag.

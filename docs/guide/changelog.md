@@ -2,6 +2,67 @@
 
 All notable changes to AntiXray. Dates are in UTC. The docs always describe the **current** release.
 
+## Server compatibility
+
+Each release declares the range of Hytale server versions it supports in its `manifest.json`. The server enforces that range itself: outside it the plugin is **refused at load** with an incompatibility message, rather than half-working against an API it wasn't built for.
+
+| AntiXray | Declared range | Loads on |
+| --- | --- | --- |
+| **{{PLUGIN_VERSION}}** (current) | `{{SERVER_VERSION}}` | `0.5.6` and any later `0.5.x` |
+| 1.1.0, 1.0.0 | `*` | **any** server version — no check at all |
+
+::: warning Server 0.6 needs AntiXray {{PLUGIN_VERSION}} or newer
+`0.6.0` introduces **native spectate**, which replaces the custom follow-camera AntiXray implements on 0.5.x. The current range deliberately stops before it — see [Live spectate](/guide/protection/spectate#live-spectate) for what changes.
+
+**If you're still on 1.0.0 or 1.1.0, upgrade before you update the server.** Those releases declare `"*"`, so they will load on 0.6 and misbehave instead of refusing. From {{PLUGIN_VERSION}} on, a server the plugin doesn't support is caught at startup.
+
+Anything in these docs that 0.6 changes carries a <Badge type="warning" text="changes in 0.6" /> badge.
+:::
+
+## {{PLUGIN_VERSION}}
+
+The honeypot works now. Three separate bugs meant that on a normal world, protection covered a fraction of what it claimed and detection could barely fire at all.
+
+**Fixed: obfuscation stopped a few seconds after a player joined**
+
+`MaxTrapsPerPlayer` capped a per-player list of every fake position at 40,000. At the default reach one player's field is roughly **100,000** positions, so the cap was hit almost immediately and new chunks stopped being obfuscated — resuming only in scraps as the client unloaded chunks. This is what "fake ores show up in random chunks, not the ones I'm standing in" was.
+
+The field is no longer stored. Which rock becomes a fake, which ore is masked, where a section's bait sits — all of it is a pure function of the block position and the surrounding terrain, identical for every player, so the break handler **recomputes** the answer instead of looking it up. Nothing per-player is kept but which sections a client has already been sent. `MaxTrapsPerPlayer` is now unused and <Badge type="danger" text="deprecated" />; it stays in the config only so existing files keep parsing.
+
+**Fixed: `MaxY` left the surface unprotected**
+
+The old default of `128` sits *below* the surface on ordinary worlds. A player standing at y140 had everything at and above eye level untouched. It is now `256`. To be clear about what this knob is: it's a CPU limiter, **not** what keeps the surface clean — every fake requires a fully-buried block, so exposed terrain is skipped regardless. Lower it only on a strictly-underground server.
+
+**Fixed: honeypots were nearly impossible to trip**
+
+The break handler checked whether the block was still fully enclosed. It cannot be — to break a block you must be able to see its face, so the check rejected essentially every genuine hit. Traps are now recognised by position alone.
+
+**New: the ore field has two tiers**
+
+The single `FakeOrePalette` split in two, and that split is what makes detection trustworthy:
+
+| | Camouflage | Trap |
+| --- | --- | --- |
+| Config | `FakeOrePalette`, `FakeOreDensity` | `TrapOrePalette`, `TrapChancePerSection` |
+| Ores | **common** metals (copper, iron) | **valuable** ores (gold, mithril, …) |
+| Density | hundreds per chunk | ~one per 12 sections |
+| Mining near it | **revealed** before you reach it | **never revealed** |
+| Breaking it | nothing | **honeypot hit** |
+
+Real valuables are masked as plain rock and the camouflage field is common-only, so **every valuable ore an X-ray user can see is a trap.** They cannot tell bait from anything else, because there is nothing else. See [Honeypots & Detection](/guide/protection/detection).
+
+**Changed: honeypot hits are a rate, not a lifetime tally**
+
+Hits used to accumulate forever, so an honest miner who tunnelled blind into a trap once a month would eventually flag themselves. Hits are now counted inside `HoneypotWindowSeconds` (default 30 min), like the mining-rate heuristic already was. What separates a cheater isn't the total — it's how many they find in a short time. `HoneypotFlagThreshold` drops from `4` to `3` to suit the window.
+
+**Also in this release**
+
+- **Pinned server compatibility.** The manifest declares `{{SERVER_VERSION}}` instead of `"*"`, so AntiXray is refused at load on a server it wasn't built for — most immediately Hytale `0.6.0`, whose native spectate replaces this plugin's follow-camera.
+- **One source of truth for the version.** The banner, the panel title and the GitHub update comparison all read the version the server parsed from `manifest.json`, filled in by the build from `gradle.properties`. A constant in the source could previously drift from the built jar and make the update check compare the wrong number.
+- **Status tab** reports camouflage and trap ids separately (`Ore ids resolved: 12 camouflage, 8 trap`) — a non-zero camouflage count with zero traps means detection can't fire.
+- `MaxChunksPerTick` raised from `8` to `16`, so the field keeps up with a player walking.
+- The debug **Nearest traps** tool reads the recomputed field instead of the removed position list.
+
 ## 1.1.0
 
 - **Update check.** On startup AntiXray asks GitHub whether a newer release exists. If there is one, a banner is printed at the **end** of the boot log — where it's actually visible rather than buried mid-startup — and admins are told in chat a few seconds after they join.

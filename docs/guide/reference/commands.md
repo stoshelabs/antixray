@@ -38,9 +38,9 @@ Four extra **debug** buttons (Test flash, Flag online players, Nearest traps, X-
 
 Read-only health overview: obfuscation/detection on-off, **fake-ore ids resolved** (must be > 0), resolved protected-block and decoy ids, players tracked, active worlds, your probe mode, and who you're spectating.
 
-## Spectator hotbar tools
+## Spectator hotbar tools <Badge type="warning" text="changes in 0.6" />
 
-Hytale sends the server no keyboard input, so while spectating your shortcuts are four items placed in your hotbar. Select one with its number key and click anywhere.
+Hytale sends the server no keyboard input, so while spectating your shortcuts are four items placed in your hotbar. Select one with its number key and click anywhere. This whole mechanism exists only because 0.5.x has no spectator mode — see [Live spectate](/guide/protection/spectate#live-spectate) for what native spectate in 0.6 replaces.
 
 | Key | Tool | Description |
 | --- | --- | --- |
