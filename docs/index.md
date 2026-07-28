@@ -5,7 +5,7 @@ hero:
   image:
     src: /logo.png
     alt: AntiXray — X-ray Protection for Hytale
-  tagline: "Stop X-ray cheating on Hytale. AntiXray hides your ores from wall-hacks with per-player packet obfuscation, then lays a field of fake-ore honeypots that quietly catch the cheaters who dig for them — with an admin suspect panel and live spectate to confirm the catch."
+  tagline: "Packet-level X-ray protection for Hytale. Hides your ores from wall-hacks, then baits and catches the cheaters digging for them."
   actions:
     - theme: brand
       text: What is AntiXray?
