@@ -9,7 +9,6 @@
 
 <p align="center">
   <a href="https://stoshelabs.github.io/antixray/"><img src="https://img.shields.io/badge/docs-online-6B2BEB?style=for-the-badge" alt="Documentation"></a>
-  <a href="https://github.com/stoshelabs/antixray/releases/latest"><img src="https://img.shields.io/github/v/release/stoshelabs/antixray?style=for-the-badge&label=version&color=2ea44f" alt="Latest release"></a>
   <img src="https://img.shields.io/badge/Hytale%20server-%3E%3D0.5.6%20%3C0.6.0-12B3A6?style=for-the-badge" alt="Hytale server >=0.5.6 <0.6.0">
 </p>
 
