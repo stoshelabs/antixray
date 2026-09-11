@@ -131,7 +131,7 @@ Suspicion tracking — the [honeypot + rate heuristics](/guide/protection/detect
 
 ## Spectate
 
-The live follow-camera used by the panel's [Spectate button](/guide/protection/spectate).
+The follow camera used by the panel's [Spectate button](/guide/protection/spectate). Spectating itself runs on Hytale's native spectator mode; these keys tune the camera AntiXray puts on top of it.
 
 ```json
 "Spectate": {
@@ -139,8 +139,7 @@ The live follow-camera used by the panel's [Spectate button](/guide/protection/s
   "LerpSpeed": 0.2,
   "AllowPitchControls": true,
   "FirstPerson": false,
-  "FirstPersonForward": 0.45,
-  "FollowYOffset": -18.0
+  "FirstPersonForward": 0.45
 }
 ```
 
@@ -151,7 +150,7 @@ The live follow-camera used by the panel's [Spectate button](/guide/protection/s
 | `AllowPitchControls` | `true` | Whether you can look around while spectating. Forced off in first person. |
 | `FirstPerson` | `false` | Start the camera in first person (through the suspect's eyes) instead of third. Flip it live in-game with **Tools → Camera view**. |
 | `FirstPersonForward` | `0.45` | First person only: how far in front of the suspect's eyes the camera sits, in blocks. `0` puts it inside their head. |
-| `FollowYOffset` | `-18.0` | Your body is teleported along with the suspect (your client needs it there to receive their chunks and entity). This parks it this many blocks **below** them so you never see your own character in frame — there is no way to hide your own model. Chunks stream per column, so a vertical offset is free. Set `0` to stand right on them. |
+| `FollowYOffset` <Badge type="danger" text="deprecated" /> | — | Unused since 1.3. It parked your body below the suspect; the native spectator makes you invisible and intangible instead. Still accepted so older configs parse. |
 
 ## Localization
 

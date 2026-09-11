@@ -6,18 +6,18 @@ AntiXray is a drop-in JAR. Install it, confirm one number in the Status tab, and
 
 | | |
 | --- | --- |
-| **Hytale server** | `0.5.6` or any later `0.5.x` — the manifest declares `{{SERVER_VERSION}}` |
+| **Hytale server** | `0.6.0` or any later `0.6.x` — the manifest declares `{{SERVER_VERSION}}` |
 | **Java** | 25 (the same runtime the server ships with) |
 
 AntiXray reads and rewrites chunk packets, so it is tied to the server build it was compiled against. The manifest range is enforced by the server itself: on a version outside it the plugin is **refused at load** with an incompatibility message rather than half-working.
 
-::: warning Server 0.6 is not supported yet
-`0.6.0` introduces **native spectate**, which replaces the custom follow-camera this plugin implements. The range deliberately stops before it — when 0.6 ships, AntiXray gets a release that targets it. Anything in these docs that 0.6 changes carries a <Badge type="warning" text="changes in 0.6" /> badge.
+::: tip Still on a 0.5.x server?
+Use **AntiXray 1.2.0** — its jar declares `>=0.5.6 <0.6.0`. Its documentation stays online under **v1.2 · Hytale 0.5** in the version menu. Update the plugin and the server together: 1.2.0 refuses to load on 0.6, and this release refuses 0.5.
 :::
 
 ## 1. Install
 
-1. Drop `AntiXray-{{PLUGIN_VERSION}}.jar` into your server's `mods/` folder.
+1. Drop `AntiXray-{{PLUGIN_VERSION}}-hytale-{{HYTALE_LINE}}.jar` into your server's `mods/` folder. The `hytale-{{HYTALE_LINE}}` part is the game line the jar is built for — it runs on any `{{HYTALE_LINE}}.x` server the manifest range allows.
 2. Start the server once. AntiXray creates its data folder (`mods/Stoshe_AntiXray/`) with a `config.json` and the `lang/` files.
 3. Confirm it loaded — the console prints the `AntiXray v{{PLUGIN_VERSION}}` banner on startup.
 

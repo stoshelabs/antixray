@@ -17,21 +17,19 @@ The list of tracked players, **most-suspicious first**. Each row shows the playe
 - **Refresh** re-sorts and re-reads the current suspicion data.
 - **Spectate** attaches your camera to that player (below).
 
-## Live spectate <Badge type="warning" text="changes in 0.6" />
+## Live spectate
 
-::: warning Replaced by native spectate in server 0.6
-Everything in this section is a workaround built on the 0.5.x packet API: the server has no spectator mode, so AntiXray drives a custom camera, teleports your body along, and stashes your inventory by hand. Hytale **0.6.0 ships native spectate**, and AntiXray will switch to it — the follow-camera, the [hotbar tools](#spectator-hud-hotbar-tools) and the inventory stash all go away with it.
+Spectate runs on **Hytale's native spectator mode**. When you click **Spectate** on a suspect, you enter AntiXray's spectator game mode — the server's own `Spectator`, with your hotbar kept for the tools below — and the server attaches you to them:
 
-Nothing to do today: the plugin's manifest declares `{{SERVER_VERSION}}`, so it will not load on 0.6 until there's a release that targets it. See [Requirements](/guide/intro/getting-started#requirements).
-:::
-
-Spectate is a **real server-side follow camera**, not a teleport. When you click **Spectate** on a suspect:
-
-- Your view detaches and locks onto the target, trailing at `Spectate.CameraDistance` blocks and easing with `LerpSpeed`. If `AllowPitchControls` is on you can look around.
-- Your body is teleported along with them (your client needs it nearby to receive their chunks and entity), parked `Spectate.FollowYOffset` blocks **below** them so you never see your own character in frame. You're made invulnerable while attached, and hidden from other players.
+- **You're invisible to everyone who isn't spectating**, and you drop off the player list. You fly, pass through blocks, can't be hurt, can't touch or break anything, and anything you say on voice stays on the spectator channel.
+- The camera follows the target, trailing at `Spectate.CameraDistance` blocks and easing with `LerpSpeed`. A raycast pulls it in so it never ends up inside a tunnel wall. If `AllowPitchControls` is on you can look around.
 - You watch them mine in real time — the ideal way to confirm an X-ray flag before you act, because you can see whether they tunnel straight to buried ore.
 - The target isn't notified and their gameplay is unaffected.
-- It follows across worlds. When it ends, you're returned to exactly where you were standing when you started.
+- It follows them into other worlds, and picks them back up after they die and respawn. When it ends, you leave the game mode and you're returned to exactly where you were standing when you started.
+
+::: info Hytale's `/spectate` and other game modes
+The vanilla `/spectate` command is separate. If you're already in a game-mode type — vanilla spectate included — AntiXray won't take it over: leave it first. If you disconnect mid-spectate, you're taken out of spectator mode the next time you join.
+:::
 
 To stop, press **`9`** on your hotbar, or open the panel → **Tools → Stop spectating**. If the suspect logs off, spectating ends on its own and tells you so.
 
@@ -47,7 +45,7 @@ A flag is a lead. Spectating a suspect for a minute of mining is usually enough 
 
 Flip between them live with hotbar **`2`**, or panel → **Tools → Camera view**. The starting mode is `Spectate.FirstPerson`.
 
-## Spectator HUD & hotbar tools <Badge type="warning" text="changes in 0.6" />
+## Spectator HUD & hotbar tools
 
 While spectating you get a HUD showing who you're watching, the camera mode, and their live detection score.
 

@@ -8,18 +8,41 @@ Each release declares the range of Hytale server versions it supports in its `ma
 
 | AntiXray | Declared range | Loads on |
 | --- | --- | --- |
-| **{{PLUGIN_VERSION}}** (current) | `{{SERVER_VERSION}}` | `0.5.6` and any later `0.5.x` |
+| **{{PLUGIN_VERSION}}** (current) | `{{SERVER_VERSION}}` | `0.6.0` and any later `0.6.x` |
+| 1.2.0 | `>=0.5.6 <0.6.0` | `0.5.6` and any later `0.5.x` |
 | 1.1.0, 1.0.0 | `*` | **any** server version — no check at all |
 
-::: warning Server 0.6 needs AntiXray {{PLUGIN_VERSION}} or newer
-`0.6.0` introduces **native spectate**, which replaces the custom follow-camera AntiXray implements on 0.5.x. The current range deliberately stops before it — see [Live spectate](/guide/protection/spectate#live-spectate) for what changes.
+::: warning Update the plugin and the server together
+Hytale 0.6 changed the packet API AntiXray is built on, so each line only runs on its own server line: 1.2.0 refuses to load on 0.6, and {{PLUGIN_VERSION}} refuses 0.5. The jar name says which is which (`AntiXray-{{PLUGIN_VERSION}}-hytale-{{HYTALE_LINE}}.jar`).
 
-**If you're still on 1.0.0 or 1.1.0, upgrade before you update the server.** Those releases declare `"*"`, so they will load on 0.6 and misbehave instead of refusing. From {{PLUGIN_VERSION}} on, a server the plugin doesn't support is caught at startup.
-
-Anything in these docs that 0.6 changes carries a <Badge type="warning" text="changes in 0.6" /> badge.
+**If you're still on 1.0.0 or 1.1.0, upgrade before you update the server.** Those releases declare `"*"`, so they will load on 0.6 and misbehave instead of refusing.
 :::
 
 ## {{PLUGIN_VERSION}}
+
+Support for Hytale **0.6**. This line targets `0.6.x` only; servers still on 0.5 stay on 1.2.0.
+
+**Fixed for 0.6: fakes sent to sections the client didn't have yet**
+
+0.6 streams the world one 32-block **section** at a time instead of a whole column at once, so "the client has this chunk" no longer means it has every section of it. AntiXray now checks each section is on the client before obfuscating it, as the server's own block updates do, and redoes a section when the client unloads it and streams it back. Without this, fakes sent too early were dropped by the client and the section counted as done — the patchwork field from 1.1 all over again.
+
+**Changed: spectate runs on Hytale's native spectator**
+
+Spectating puts you in AntiXray's spectator game mode, the server's own `Spectator` with the hotbar kept for the spectator tools. The server now does what AntiXray used to fake by hand: you're invisible to non-spectators and off the player list, you fly through blocks, you can't be hurt or touch anything, and your body follows the suspect on its own. Gone with the workarounds: parking your body under the suspect (`Spectate.FollowYOffset` is now unused and <Badge type="danger" text="deprecated" />), re-hiding you from every player each second, and the invulnerability hack. The third-person camera now stops short of walls instead of clipping into them. AntiXray still handles what the native mode doesn't: following into other worlds, cycling through suspects only, first person, the HUD and the inventory tools.
+
+**Faster: one packet per section**
+
+0.6 can change many blocks of a section in a single packet, as the server's own block updates do. Obfuscation, reveals and the debug tools now send one packet per section instead of one per block — thousands of packets per chunk become a handful.
+
+**Also in this release**
+
+- Inventories are read through 0.6's per-section inventory API, replacing the old one Hytale has marked for removal.
+- Send-time mode ported to 0.6's new packet encoding.
+- The jar is named after the game line it targets: `AntiXray-<version>-hytale-<line>.jar`.
+- AntiXray shows its icon in the world settings' mods list instead of the `?` placeholder.
+- The documentation is versioned: pick the release you run from the version menu. The 1.2 docs (Hytale 0.5) stay online.
+
+## 1.2.0
 
 The honeypot works now. Three separate bugs meant that on a normal world, protection covered a fraction of what it claimed and detection could barely fire at all.
 
@@ -57,7 +80,7 @@ Hits used to accumulate forever, so an honest miner who tunnelled blind into a t
 
 **Also in this release**
 
-- **Pinned server compatibility.** The manifest declares `{{SERVER_VERSION}}` instead of `"*"`, so AntiXray is refused at load on a server it wasn't built for — most immediately Hytale `0.6.0`, whose native spectate replaces this plugin's follow-camera.
+- **Pinned server compatibility.** The manifest declares `>=0.5.6 <0.6.0` instead of `"*"`, so AntiXray is refused at load on a server it wasn't built for — most immediately Hytale `0.6.0`, whose native spectate replaces this plugin's follow-camera.
 - **One source of truth for the version.** The banner, the panel title and the GitHub update comparison all read the version the server parsed from `manifest.json`, filled in by the build from `gradle.properties`. A constant in the source could previously drift from the built jar and make the update check compare the wrong number.
 - **Status tab** reports camouflage and trap ids separately (`Ore ids resolved: 12 camouflage, 8 trap`) — a non-zero camouflage count with zero traps means detection can't fire.
 - `MaxChunksPerTick` raised from `8` to `16`, so the field keeps up with a player walking.
