@@ -16,8 +16,8 @@ import dev.stoshe.antixray.AntiXray;
 import dev.stoshe.antixray.manager.BlockCatalog;
 import dev.stoshe.antixray.model.AntiXrayConfig;
 import dev.stoshe.antixray.util.Console;
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
+import java.lang.foreign.MemorySegment;
+import java.util.Arrays;
 
 import java.util.List;
 import java.util.Map;
@@ -229,28 +229,25 @@ public final class SendTimeObfuscator {
         return (b[off] & 0xff) | ((b[off + 1] & 0xff) << 8) | ((b[off + 2] & 0xff) << 16) | ((b[off + 3] & 0xff) << 24);
     }
 
+    /**
+     * Hytale 0.6 moved the protocol from netty ByteBufs to {@link MemorySegment}. A heap segment over a plain
+     * byte[] is what vanilla's own CachedPacket uses, so the protocol layouts are safe on it.
+     */
     private static byte[] serializeToBytes(Packet packet) {
-        ByteBuf out = Unpooled.buffer();
         try {
-            packet.serialize(out);
-            byte[] raw = new byte[out.readableBytes()];
-            out.getBytes(out.readerIndex(), raw);
-            return raw;
+            byte[] raw = new byte[packet.computeSize()];
+            int written = packet.serialize(MemorySegment.ofArray(raw), 0);
+            return written == raw.length ? raw : Arrays.copyOf(raw, written);
         } catch (Throwable t) {
             return null;
-        } finally {
-            out.release();
         }
     }
 
     private SetChunk deserialize(byte[] raw) {
-        ByteBuf in = Unpooled.wrappedBuffer(raw);
         try {
-            return SetChunk.deserialize(in, 0);
+            return SetChunk.toObject(MemorySegment.ofArray(raw), 0);
         } catch (Throwable t) {
             return null;
-        } finally {
-            in.release();
         }
     }
 }

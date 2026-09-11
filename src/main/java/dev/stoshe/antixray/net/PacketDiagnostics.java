@@ -16,8 +16,7 @@ import com.hypixel.hytale.server.core.universe.world.chunk.section.BlockSection;
 import dev.stoshe.antixray.AntiXray;
 import dev.stoshe.antixray.manager.BlockCatalog;
 import dev.stoshe.antixray.util.Console;
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
+import java.lang.foreign.MemorySegment;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
@@ -166,7 +165,7 @@ public final class PacketDiagnostics {
                 return;
             }
             BlockChunk bc = wc.getBlockChunk();
-            if (bc == null || sy < 0 || sy >= bc.getSectionCount()) {
+            if (bc == null || sy < 0 || sy >= ChunkUtil.HEIGHT_SECTIONS) {
                 logBoth(tag + "no section — skipped.", rec);
                 return;
             }
@@ -289,33 +288,27 @@ public final class PacketDiagnostics {
     }
 
     private SetChunk tryDeserialize(byte[] raw) {
+        MemorySegment seg = MemorySegment.ofArray(raw);
         for (int off : new int[] {0, 2, 4}) {
-            ByteBuf buf = Unpooled.wrappedBuffer(raw);
             try {
-                SetChunk sc = SetChunk.deserialize(buf, off);
+                SetChunk sc = SetChunk.toObject(seg, off);
                 if (sc != null && sc.data != null) {
                     return sc;
                 }
             } catch (Throwable ignored) {
                 // wrong offset — try the next
-            } finally {
-                buf.release();
             }
         }
         return null;
     }
 
     private static byte[] serializeToBytes(Packet packet) {
-        ByteBuf buf = Unpooled.buffer();
         try {
-            packet.serialize(buf);
-            byte[] out = new byte[buf.readableBytes()];
-            buf.getBytes(buf.readerIndex(), out);
-            return out;
+            byte[] out = new byte[packet.computeSize()];
+            int written = packet.serialize(MemorySegment.ofArray(out), 0);
+            return written == out.length ? out : Arrays.copyOf(out, written);
         } catch (Throwable t) {
             return null;
-        } finally {
-            buf.release();
         }
     }
 

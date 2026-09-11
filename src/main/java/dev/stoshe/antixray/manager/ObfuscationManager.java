@@ -257,7 +257,25 @@ public final class ObfuscationManager {
                     view.doneChunks.remove(key); // not delivered (or reloading) — redo once it arrives
                     continue;
                 }
-                long missing = needed & ~view.doneChunks.getOrDefault(key, 0L);
+                // Hytale 0.6 streams a column one SECTION at a time: a READY column says nothing about whether
+                // the client holds the section we're about to edit, and vanilla ReplicateChanges now gates on
+                // isLoaded(x, sy, z) for exactly that reason. Only sections the client has count as workable,
+                // and a done bit whose section the client dropped (UnloadSection) is cleared, so the section is
+                // redone when it streams back in with vanilla contents.
+                long delivered = needed;
+                if (tracker != null) {
+                    delivered = 0L;
+                    for (int sy = sectionLo; sy <= sectionHi; sy++) {
+                        if (tracker.isLoaded(cx, sy, cz)) {
+                            delivered |= 1L << sy;
+                        }
+                    }
+                    long stale = view.doneChunks.getOrDefault(key, 0L) & needed & ~delivered;
+                    if (stale != 0L) {
+                        view.doneChunks.computeIfPresent(key, (k, v) -> v & ~stale);
+                    }
+                }
+                long missing = delivered & ~view.doneChunks.getOrDefault(key, 0L);
                 if (missing != 0L) {
                     int dist = Math.abs(cx - pcx) + Math.abs(cz - pcz);
                     todo.add(new long[] {dist, cx, cz, key, missing});
@@ -934,10 +952,11 @@ public final class ObfuscationManager {
         });
     }
 
-    private void flush(PacketHandler ph, List<ToClientPacket> batch) {
-        if (batch.isEmpty()) {
+    private void flush(PacketHandler ph, List<ToClientPacket> raw) {
+        if (raw.isEmpty()) {
             return;
         }
+        List<ToClientPacket> batch = coalesce(raw);
         try {
             // writeNoCache, like vanilla's block replication: these packets are unique per player, so the
             // shared cached-packet path is both wasteful and (for per-player fakes) wrong — PacketHandler.write
@@ -963,8 +982,48 @@ public final class ObfuscationManager {
                 }
             }
         } catch (Exception e) {
-            Console.warning("Failed to send " + batch.size() + " anti-xray packets: " + e.getMessage());
+            Console.warning("Failed to send " + raw.size() + " anti-xray block changes: " + e.getMessage());
         }
+    }
+
+    /**
+     * Hytale 0.6 added {@code ServerSetBlocks}: every change inside one 32³ section in a single packet, which is
+     * what vanilla's own {@code ChunkSystems$ReplicateChanges} sends for a multi-block edit. The obfuscation
+     * pass produces thousands of changes per section, so this turns thousands of packets into one. Groups by
+     * section (keeping the order within each, so a later change to the same block still wins); a section with
+     * a single change stays a plain {@code ServerSetBlock}, exactly like vanilla.
+     *
+     * <p>The packet addresses the section by CHUNK coordinates (vanilla passes {@code ChunkSection.getX/Y/Z})
+     * and each block by {@link ChunkUtil#indexBlock}, the same section-local index vanilla puts in
+     * {@code SetBlockCmd}.
+     */
+    private static List<ToClientPacket> coalesce(List<ToClientPacket> batch) {
+        java.util.Map<Long, List<ServerSetBlock>> bySection = new java.util.LinkedHashMap<>();
+        List<ToClientPacket> out = new ArrayList<>();
+        for (ToClientPacket p : batch) {
+            if (p instanceof ServerSetBlock b) {
+                long key = ((long) (b.x >> 5) << 36) | ((long) ((b.z >> 5) & 0xFFFFFFF) << 8) | ((b.y >> 5) & 0xFF);
+                bySection.computeIfAbsent(key, k -> new ArrayList<>()).add(b);
+            } else {
+                out.add(p);
+            }
+        }
+        for (List<ServerSetBlock> group : bySection.values()) {
+            if (group.size() == 1) {
+                out.add(group.get(0));
+                continue;
+            }
+            var cmds = new com.hypixel.hytale.protocol.packets.world.SetBlockCmd[group.size()];
+            for (int i = 0; i < cmds.length; i++) {
+                ServerSetBlock b = group.get(i);
+                cmds[i] = new com.hypixel.hytale.protocol.packets.world.SetBlockCmd(
+                        (short) ChunkUtil.indexBlock(b.x, b.y, b.z), b.blockId, b.filler, b.rotation);
+            }
+            ServerSetBlock first = group.get(0);
+            out.add(new com.hypixel.hytale.protocol.packets.world.ServerSetBlocks(
+                    first.x >> 5, first.y >> 5, first.z >> 5, cmds));
+        }
+        return out;
     }
 
     // ------------------------------------------------------------------ block snapshot

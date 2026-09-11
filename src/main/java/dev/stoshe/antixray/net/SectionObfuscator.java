@@ -45,7 +45,8 @@ public final class SectionObfuscator {
     public static Result obfuscate(World world, BlockChunk bc, int cx, int sy, int cz,
                                    BlockCatalog catalog, AntiXrayConfig.Obfuscation cfg) {
         try {
-            int sectionCount = bc.getSectionCount();
+            // Hytale 0.6 dropped BlockChunk.getSectionCount(); every column is the fixed world height.
+            int sectionCount = ChunkUtil.HEIGHT_SECTIONS;
             if (sy < 0 || sy >= sectionCount) {
                 return null;
             }
