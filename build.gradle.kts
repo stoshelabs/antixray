@@ -1,5 +1,6 @@
 import org.gradle.nativeplatform.platform.internal.DefaultNativePlatform
 import org.gradle.api.tasks.compile.JavaCompile
+import java.util.jar.JarFile
 
 plugins {
     id("java")
@@ -59,6 +60,35 @@ if (!file(hytaleServerJar).exists()) {
     )
 }
 
+/**
+ * The Hytale release line this build compiles against — "0.6" for a server reporting 0.6.5.
+ *
+ * Read from the server jar's own manifest rather than configured by hand, so the name on the file cannot
+ * drift from what the build actually used. The line, not the patch: one jar serves the whole 0.6.x, and
+ * stamping 0.6.5 on it would imply it does not run on 0.6.2 when it does. -PhytaleVersion=0.6 overrides;
+ * a server that reports a date instead of a version (older builds did) just leaves the suffix off.
+ */
+fun detectHytaleLine(): String? {
+    (findProperty("hytaleVersion") as? String)?.takeIf { it.isNotBlank() }?.let { return it }
+
+    val reported = try {
+        JarFile(file(hytaleServerJar)).use { jar ->
+            jar.manifest?.mainAttributes?.getValue("Implementation-Version")
+        }
+    } catch (e: Exception) {
+        logger.warn("Could not read the Hytale version from $hytaleServerJar: ${e.message}")
+        null
+    }
+
+    return reported?.let { Regex("^(\\d+\\.\\d+)").find(it)?.groupValues?.get(1) }
+}
+
+val hytaleLine = detectHytaleLine()
+
+if (hytaleLine == null) {
+    logger.warn("Hytale version not detected; the jar will be named without one. Pass -PhytaleVersion=0.6 to set it.")
+}
+
 java {
     toolchain {
         languageVersion.set(JavaLanguageVersion.of(javaLanguageVersion))
@@ -92,11 +122,16 @@ tasks.jar {
     archiveBaseName.set("AntiXray")
     archiveVersion.set(project.version.toString())
 
+    // AntiXray-1.3.0-hytale-0.6.jar. The game line is on the file because that is the question someone
+    // downloading a release is actually asking, and a release page listing several versions can't answer it.
+    hytaleLine?.let { archiveClassifier.set("hytale-$it") }
+
     manifest {
         attributes(
             "Implementation-Title" to project.name,
             "Implementation-Version" to project.version
         )
+        hytaleLine?.let { attributes("Hytale-Version" to it) }
     }
 
     from("src/main/resources")
