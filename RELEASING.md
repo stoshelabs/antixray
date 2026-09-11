@@ -8,7 +8,10 @@ update check and the "what's new" popup both depend on the tag matching what the
 - **`gradle.properties` is the only place the plugin version is written.** It flows into the jar name,
   the jar manifest, `manifest.json` (via `processResources` token replacement), and back into the
   running plugin through `AntiXray.getVersion()`, which reads the manifest the server parsed. The docs
-  read the same file at build time (`{{PLUGIN_VERSION}}`). Never hardcode a version anywhere else.
+  read the same file at build time (`{{PLUGIN_VERSION}}`). Never hardcode a version anywhere else —
+  with one exception: the docs' release *line* (`1.3`, not `1.3.0`) and the Hytale line it targets
+  live in `docs/.vitepress/versions.ts`, because the docs site keeps one directory per line and has to
+  know which lines exist. The docs build warns if the two disagree.
 - **Tags are `v`-prefixed: `v1.2.0`, not `1.2.0`.** `UpdateChecker.fetchReleaseForVersion` looks up
   `/releases/tags/v{version}`. A tag without the `v` makes the "what's new" popup silently fall back to
   the *previous* release's notes.
@@ -27,10 +30,14 @@ update check and the "what's new" popup both depend on the tag matching what the
    the Hytale-server badge in `README.md` — the README is the one file with no token substitution, so
    it is the only place a range is written by hand. (Its version badge is dynamic and needs no touch.)
 3. Add the release section to `docs/guide/changelog.md`.
-4. `./gradlew jar` — verify `build/libs/AntiXray-x.y.z.jar` and that its bundled `manifest.json` shows
-   the right `Version` and `ServerVersion`:
+   If this release starts a new line (1.3 → 1.4), also update `docs/.vitepress/versions.ts`: move the
+   outgoing line into `archived`, set `current` to the new one and add its `hytale` entry. The outgoing
+   line's tag must already be pushed — its archived docs are built from it. The comment at the top of
+   that file has the details; a patch release needs none of it.
+4. `./gradlew jar` — verify `build/libs/AntiXray-x.y.z-hytale-<line>.jar` and that its bundled
+   `manifest.json` shows the right `Version` and `ServerVersion`:
    ```sh
-   unzip -p build/libs/AntiXray-x.y.z.jar manifest.json
+   unzip -p build/libs/AntiXray-x.y.z-hytale-*.jar manifest.json
    ```
 5. Commit, then tag **that commit**: `git tag vx.y.z && git push origin main --tags`.
 6. Publish the GitHub release on tag `vx.y.z` **with notes in the body** — the body is what the in-game

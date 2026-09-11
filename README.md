@@ -9,7 +9,7 @@
 
 <p align="center">
   <a href="https://stoshelabs.github.io/antixray/"><img src="https://img.shields.io/badge/docs-online-6B2BEB?style=for-the-badge" alt="Documentation"></a>
-  <img src="https://img.shields.io/badge/Hytale%20server-%3E%3D0.5.6%20%3C0.6.0-12B3A6?style=for-the-badge" alt="Hytale server >=0.5.6 <0.6.0">
+  <img src="https://img.shields.io/badge/Hytale%20server-%3E%3D0.6.0%20%3C0.7.0-12B3A6?style=for-the-badge" alt="Hytale server >=0.6.0 <0.7.0">
 </p>
 
 <p align="center">
@@ -42,7 +42,7 @@ honest players never see or feel a thing.
 
 ## Quick start
 
-1. Drop `AntiXray-<version>.jar` from the **[latest release](https://github.com/stoshelabs/antixray/releases/latest)** into your server's `mods/` folder. Requires a Hytale server in the `>=0.5.6 <0.6.0` range.
+1. Drop `AntiXray-<version>-hytale-<line>.jar` from the **[latest release](https://github.com/stoshelabs/antixray/releases/latest)** into your server's `mods/` folder — the `hytale-` part is the game line the build targets, so pick the one matching your server (e.g. `AntiXray-1.3.0-hytale-0.6.jar` for any 0.6.x). Requires a Hytale server in the `>=0.6.0 <0.7.0` range (still on 0.5.x? use AntiXray 1.2.0).
 2. Start the server once to generate `config.json` and the language files.
 3. Run `/antixray` (alias `/ax`) and check **Status → Fake-ore ids resolved** is greater than `0`.
 
@@ -67,10 +67,10 @@ Everything lives on the docs site — mechanics, every config key, and the full 
 ## Building from source
 
 ```sh
-./gradlew jar        # → build/libs/AntiXray-<version>.jar
+./gradlew jar        # → build/libs/AntiXray-<version>-hytale-<line>.jar
 ```
 
-The build locates `HytaleServer.jar` from your Hytale install (or `libs/`). The docs live in [`docs/`](docs) (VitePress) and deploy to GitHub Pages automatically on push to `main`.
+The build locates `HytaleServer.jar` from your Hytale install (or `libs/`). The docs live in [`docs/`](docs) (VitePress) and deploy to GitHub Pages automatically on push to `main` — one directory per release line, built by [`tools/build_docs.sh`](tools/build_docs.sh).
 
 ---
 

@@ -1,14 +1,18 @@
 import { readFileSync } from 'node:fs'
 import { defineConfig } from 'vitepress'
+import { hytaleLine, isArchived, version, versionBanner, versionMenu } from './versions'
 
-// AntiXray documentation — plain VitePress. The docs always describe the current release; a
-// hand-maintained Changelog page (guide/changelog.md) records what changed per version.
+// AntiXray documentation — plain VitePress. Each release line is built with its own base path
+// into its own directory, and the newest is also built at the root; see versions.ts and
+// tools/build_docs.sh. A hand-maintained Changelog page (guide/changelog.md) records what changed
+// per version.
 //
 // Versions are NOT written by hand in the markdown. They are read here from the same files the build
 // uses and substituted at build time, so a release bump never leaves a stale number behind:
 //
-//   {{PLUGIN_VERSION}}   -> gradle.properties `version`        (e.g. AntiXray-{{PLUGIN_VERSION}}.jar)
+//   {{PLUGIN_VERSION}}   -> gradle.properties `version`        (e.g. AntiXray-{{PLUGIN_VERSION}}-hytale-{{HYTALE_LINE}}.jar)
 //   {{SERVER_VERSION}}   -> manifest.json `ServerVersion`      (the supported Hytale range)
+//   {{HYTALE_LINE}}      -> versions.ts `hytale[version]`      (the jar's `hytale-<line>` suffix, e.g. 0.6)
 //
 // See the markdown.config hook at the bottom for the substitution itself.
 //
@@ -35,24 +39,45 @@ if (!serverVersion) {
     throw new Error("Could not read 'ServerVersion' from src/main/resources/manifest.json.")
 }
 
+// The release line versions.ts says this build documents, against the version gradle.properties
+// says this checkout builds. A warning rather than an error: the two are edited in separate steps of
+// a release (see versions.ts), and a local build in between is legitimate. A deploy is not.
+if (!pluginVersion.startsWith(`${version}.`)) {
+    console.warn(`[docs] versions.ts documents ${version} but gradle.properties says ${pluginVersion} — bump one of them.`)
+}
+
+if (!hytaleLine) {
+    throw new Error(`No Hytale line for ${version} in docs/.vitepress/versions.ts \`hytale\` — the jar name in the docs would be wrong.`)
+}
+
 const VERSION_TOKENS: Record<string, string> = {
     '{{PLUGIN_VERSION}}': pluginVersion,
     '{{SERVER_VERSION}}': serverVersion,
+    '{{HYTALE_LINE}}': hytaleLine,
 }
+
+const base = process.env.ANTIXRAY_DOCS_BASE ?? '/antixray/' // GitHub Pages: https://stoshelabs.github.io/antixray/
 
 export default defineConfig({
     title: 'AntiXray',
     description: 'Packet-level X-ray protection for Hytale — ore obfuscation, honeypot detection, and live spectate.',
-    base: '/antixray/', // GitHub Pages: https://stoshelabs.github.io/antixray/
+    base,
     lang: 'en-US',
     cleanUrls: true,
     lastUpdated: true,
     head: [
-        ['link', { rel: 'icon', href: '/antixray/icon.png' }],
+        // Derived from base, not hardcoded: a versioned build serves its own copy of
+        // public/, and a fixed /antixray/ path would point every version at the root's.
+        ['link', { rel: 'icon', href: `${base}icon.png` }],
         ['meta', { name: 'theme-color', content: '#12b3a6' }],
         ['meta', { property: 'og:title', content: 'AntiXray — X-ray Protection for Hytale' }],
         ['meta', { property: 'og:description', content: 'Stop X-ray cheating on Hytale: per-player packet ore obfuscation, a fake-ore honeypot that detects and catches cheaters, an admin suspect panel, and live spectate.' }],
-        ['meta', { property: 'og:image', content: '/antixray/logo.png' }],
+        ['meta', { property: 'og:image', content: `${base}logo.png` }],
+        // The layout-top slot sits above a fixed navbar, so the layout only leaves room
+        // for a banner whose height it was told. Set here rather than in custom.css
+        // because the current build has no banner and must not reserve the space.
+        // Keep in step with the height in theme/VersionBanner.vue.
+        ...(isArchived ? [['style', {}, ':root{--vp-layout-top-height:40px}'] as const] : []),
     ],
     markdown: {
         // Substitute the version tokens in the raw markdown, before parsing — so they work everywhere,
@@ -73,7 +98,12 @@ export default defineConfig({
             { text: 'How it protects', link: '/guide/protection/obfuscation' },
             { text: 'Commands', link: '/guide/reference/commands' },
             { text: 'Changelog', link: '/guide/changelog' },
+            versionMenu(),
         ],
+
+        // Read by theme/VersionBanner.vue. Null on the current build, so the banner
+        // only ever appears on a version that is no longer the latest.
+        versionBanner: versionBanner(),
         sidebar: [
             {
                 text: 'Introduction',

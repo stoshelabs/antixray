@@ -12,6 +12,7 @@ on:
       - "docs/**"
       - "gradle.properties"
       - "src/main/resources/manifest.json"
+      - "tools/build_docs.sh"
       - ".github/workflows/docs.yml"
   workflow_dispatch:
 
@@ -29,29 +30,54 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+      # Full history and every tag: an archived version is built from its tag, in a
+      # worktree, so a shallow clone would silently publish a version dropdown
+      # whose older entries lead nowhere. Full history is also what lastUpdated
+      # reads its timestamps from.
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
-          fetch-depth: 0 # needed for lastUpdated (git timestamps)
+          fetch-depth: 0
 
+      # 24, not 20: build_docs.sh reads the archived list straight out of
+      # versions.ts, and stripping types from TypeScript needs a node that can.
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
-          node-version: 20
+          node-version: 24
           cache: 'npm'
           cache-dependency-path: docs/package-lock.json
 
       - name: Setup Pages
-        uses: actions/configure-pages@v4
+        id: pages
+        uses: actions/configure-pages@v6
 
       - name: Install dependencies
         run: cd docs && npm ci
 
-      - name: Build with VitePress
-        run: cd docs && npm run build
+      # `base` comes from the Pages configuration rather than being hardcoded, so
+      # renaming the repository does not silently break every asset URL. VitePress
+      # wants the trailing slash that base_path does not carry.
+      - name: Resolve the base path
+        id: base
+        run: |
+          path="${{ steps.pages.outputs.base_path }}"
+          [ -z "$path" ] && path="/${GITHUB_REPOSITORY#*/}"
+          echo "value=${path%/}/" >> "$GITHUB_OUTPUT"
+
+      # Not `npm run build`: that builds the current version alone. This also
+      # pins it at /v<current>/ and rebuilds everything in `archived`, each from
+      # its tag into its own directory. The absolute URL is what the links
+      # between versions use — see docs/.vitepress/versions.ts for why they
+      # cannot be relative.
+      - name: Build every version
+        env:
+          ANTIXRAY_DOCS_BASE: ${{ steps.base.outputs.value }}
+          ANTIXRAY_DOCS_SITE_URL: ${{ steps.pages.outputs.base_url }}
+        run: tools/build_docs.sh
 
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
         with:
           path: docs/.vitepress/dist
 
@@ -64,4 +90,4 @@ jobs:
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5
