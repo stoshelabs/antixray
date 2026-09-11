@@ -74,6 +74,8 @@
     "camera_missing": "Couldn't find the player's entity.",
     "networkid_missing": "Player has no NetworkId — can't spectate.",
     "spectate_target_left": "%player% went offline — spectating stopped, you're back where you were.",
+    "spectate_mode_busy": "You're in the '%mode%' game mode — leave it first, then spectate.",
+    "spectate_recovered": "You were still in spectator mode from your last session — back to normal.",
     "sim_done": "Force-flagged %n% online player(s).",
     "traps_header": "Honeypots armed in your view: %n%",
     "test_flash": "Test flash: %n% blocks for %secs%s.",

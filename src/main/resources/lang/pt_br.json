@@ -74,6 +74,8 @@
     "camera_missing": "Não foi possível localizar a entidade do jogador.",
     "networkid_missing": "Jogador sem NetworkId — não é possível espectar.",
     "spectate_target_left": "%player% saiu do servidor — spectate encerrado, você voltou para onde estava.",
+    "spectate_mode_busy": "Você está no modo de jogo '%mode%' — saia dele antes de espectar.",
+    "spectate_recovered": "Você ainda estava no modo espectador da última sessão — tudo de volta ao normal.",
     "sim_done": "%n% jogador(es) online flagado(s).",
     "traps_header": "Honeypots armados na sua visão: %n%",
     "test_flash": "Test flash: %n% blocos por %secs%s.",

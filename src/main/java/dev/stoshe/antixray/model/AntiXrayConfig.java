@@ -227,7 +227,11 @@ public final class AntiXrayConfig {
         public boolean FirstPerson = false;
         /** First person: how far FORWARD of the suspect's eyes to sit, so you aren't inside their head. */
         public float FirstPersonForward = 0.45f;
-        /** Blocks BELOW the suspect the admin's (invisible-to-others) body is parked, to keep it out of shot. */
+        /**
+         * Unused since 1.3: spectate runs on Hytale 0.6's native spectator, which makes the admin's body
+         * intangible and invisible, so there's nothing to park out of shot. Kept so older configs still parse.
+         */
+        @Deprecated
         public double FollowYOffset = -18.0;
     }
 

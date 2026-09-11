@@ -1,8 +1,8 @@
 package dev.stoshe.antixray.manager;
 
 import com.hypixel.hytale.component.Ref;
+import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.server.core.entity.entities.Player;
-import com.hypixel.hytale.server.core.inventory.Inventory;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
 import com.hypixel.hytale.server.core.inventory.container.ItemContainer;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
@@ -10,6 +10,7 @@ import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import dev.stoshe.antixray.util.Console;
+import dev.stoshe.antixray.util.Inventories;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,12 +31,12 @@ public final class SuspectInventory {
     }
 
     /** Inventory sections we expose, in display order. */
-    public static final int HOTBAR = 0;
-    public static final int STORAGE = 1;
-    public static final int BACKPACK = 2;
-    public static final int ARMOR = 3;
-    public static final int UTILITY = 4;
-    public static final int TOOLS = 5;
+    public static final int HOTBAR = Inventories.HOTBAR;
+    public static final int STORAGE = Inventories.STORAGE;
+    public static final int BACKPACK = Inventories.BACKPACK;
+    public static final int ARMOR = Inventories.ARMOR;
+    public static final int UTILITY = Inventories.UTILITY;
+    public static final int TOOLS = Inventories.TOOLS;
     private static final int[] SECTIONS = {HOTBAR, STORAGE, BACKPACK, ARMOR, UTILITY, TOOLS};
 
     /** One stack in a suspect's inventory, addressable across reads. */
@@ -56,10 +57,10 @@ public final class SuspectInventory {
 
     /** Reads everything the suspect carries and hands it to {@code out} on the world thread. */
     public void read(PlayerRef target, Consumer<List<Entry>> out) {
-        onSuspect(target, (player, inv) -> {
+        onSuspect(target, (store, ref) -> {
             List<Entry> entries = new ArrayList<>();
             for (int section : SECTIONS) {
-                ItemContainer c = container(inv, section);
+                ItemContainer c = Inventories.section(store, ref, section);
                 if (c == null) {
                     continue;
                 }
@@ -81,8 +82,8 @@ public final class SuspectInventory {
      */
     public void confiscate(PlayerRef admin, PlayerRef target, Entry entry, boolean toAdmin,
             Consumer<Boolean> onDone) {
-        onSuspect(target, (player, inv) -> {
-            ItemContainer c = container(inv, entry.section());
+        onSuspect(target, (store, ref) -> {
+            ItemContainer c = Inventories.section(store, ref, entry.section());
             if (c == null) {
                 onDone.accept(false);
                 return;
@@ -120,10 +121,6 @@ public final class SuspectInventory {
                 if (ref == null || !ref.isValid()) {
                     return;
                 }
-                Player player = ref.getStore().getComponent(ref, Player.getComponentType());
-                if (player == null) {
-                    return;
-                }
                 // While spectating, the live inventory is the tool bar and gets wiped on detach — so the
                 // evidence goes into the stashed snapshot and shows up when the admin gets their gear back.
                 if (vault == null || !vault.addToSnapshot(admin.getUuid(), stack)) {
@@ -135,7 +132,8 @@ public final class SuspectInventory {
         });
     }
 
-    private void onSuspect(PlayerRef target, java.util.function.BiConsumer<Player, Inventory> action) {
+    private void onSuspect(PlayerRef target,
+            java.util.function.BiConsumer<Store<EntityStore>, Ref<EntityStore>> action) {
         if (target == null) {
             return;
         }
@@ -149,26 +147,10 @@ public final class SuspectInventory {
                 if (ref == null || !ref.isValid()) {
                     return;
                 }
-                Player player = ref.getStore().getComponent(ref, Player.getComponentType());
-                if (player == null || player.getInventory() == null) {
-                    return;
-                }
-                action.accept(player, player.getInventory());
+                action.accept(ref.getStore(), ref);
             } catch (Exception e) {
                 Console.warning("suspect inventory access failed: " + e.getMessage());
             }
         });
-    }
-
-    private ItemContainer container(Inventory inv, int section) {
-        return switch (section) {
-            case HOTBAR -> inv.getHotbar();
-            case STORAGE -> inv.getStorage();
-            case BACKPACK -> inv.getBackpack();
-            case ARMOR -> inv.getArmor();
-            case UTILITY -> inv.getUtility();
-            case TOOLS -> inv.getTools();
-            default -> null;
-        };
     }
 }

@@ -87,7 +87,7 @@
   },
 
   "Spectate": {
-    "//": "Live follow-camera used by the admin panel / '/antixray spectate <player>'.",
+    "//": "Live spectate (admin panel → Spectate). Runs on Hytale's native spectator mode; these tune AntiXray's own follow camera on top of it.",
     "CameraDistance": 4.0,
     "//LerpSpeed": "Camera smoothing: a per-frame interpolation factor between 0 and 1 (vanilla uses 0.2). Higher = snappier. Values above 1 overshoot every frame and make the camera spin/flip, so they are clamped to 1.",
     "LerpSpeed": 0.2,
@@ -95,8 +95,6 @@
     "//FirstPerson": "Start the spectate camera in first person (through the suspect's eyes) instead of third person. Either way you can flip between the two in-game with /ax → Tools → \"Camera view\".",
     "FirstPerson": false,
     "//FirstPersonForward": "First person only: how far in front of the suspect's eyes the camera sits, in blocks. 0 puts it inside their head; 0.45 is just past it. If the offset seems locked to a fixed world direction on your build, set 0.",
-    "FirstPersonForward": 0.45,
-    "//FollowYOffset": "The admin's body is teleported along with the suspect (the client needs it there to receive their chunks and entity). This parks it this many blocks BELOW them so the admin never sees his own character in frame. Chunks stream per column, so a vertical offset costs nothing. Set 0 to stand right on the suspect.",
-    "FollowYOffset": -18.0
+    "FirstPersonForward": 0.45
   }
 }

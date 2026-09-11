@@ -1,0 +1,15 @@
+{
+  "Parent": "Spectator",
+  "PreventInventoryAccess": false,
+  "OverrideAllInteractions": true,
+  "LockedCameraView": null,
+  "HudComponents": [
+    "Hotbar",
+    "Chat",
+    "Notifications",
+    "KillFeed",
+    "PlayerList",
+    "EventTitle",
+    "Compass"
+  ]
+}

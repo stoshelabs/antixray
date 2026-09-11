@@ -2,8 +2,6 @@ package dev.stoshe.antixray.manager;
 
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
-import com.hypixel.hytale.server.core.entity.entities.Player;
-import com.hypixel.hytale.server.core.inventory.Inventory;
 import com.hypixel.hytale.server.core.inventory.ItemStack;
 import com.hypixel.hytale.server.core.inventory.container.ItemContainer;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
@@ -11,6 +9,7 @@ import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import dev.stoshe.antixray.util.Console;
+import dev.stoshe.antixray.util.Inventories;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -23,19 +22,11 @@ import java.util.concurrent.ConcurrentHashMap;
  * tools) and hands it back untouched when they detach, disconnect, or the server stops.
  *
  * <p>Ported from the same-named class in aerowars, trimmed to what spectate needs. Every section a tool could
- * land in is captured AND cleared — {@code Inventory.clear()} only touches hotbar/storage/backpack, so armor
- * and utility/tools would otherwise survive. All ECS work is marshalled onto the owning world thread, and the
- * {@link PlayerRef} is resolved fresh there because a cross-world teleport changes the ECS ref.
+ * land in is captured AND cleared — armor and utility/tools included. All ECS work is marshalled onto the
+ * owning world thread, and the {@link PlayerRef} is resolved fresh there because a cross-world teleport
+ * changes the ECS ref.
  */
 public final class InventoryVault {
-
-    private static final int HOTBAR = 0;
-    private static final int STORAGE = 1;
-    private static final int BACKPACK = 2;
-    private static final int ARMOR = 3;
-    private static final int UTILITY = 4;
-    private static final int TOOLS = 5;
-    private static final int SECTION_COUNT = 6;
 
     private record SavedSlot(int container, short slot, ItemStack stack) { }
 
@@ -48,10 +39,10 @@ public final class InventoryVault {
 
     /**
      * Snapshots and clears the player's inventory, then runs {@code andThen} on the world thread with the now
-     * empty {@link Inventory} so the caller can drop its own items in. No-op if a snapshot already exists
-     * (re-attaching to another suspect must not overwrite the real inventory with the tool bar).
+     * empty HOTBAR so the caller can drop its own items in. No-op if a snapshot already exists (re-attaching
+     * to another suspect must not overwrite the real inventory with the tool bar).
      */
-    public void stash(World world, UUID uuid, java.util.function.Consumer<Inventory> andThen) {
+    public void stash(World world, UUID uuid, java.util.function.Consumer<ItemContainer> andThen) {
         if (world == null || uuid == null || saved.containsKey(uuid)) {
             return;
         }
@@ -63,19 +54,18 @@ public final class InventoryVault {
                 }
                 Store<EntityStore> store = world.getEntityStore().getStore();
                 Ref<EntityStore> ref = pr.getReference();
-                Player player = store.getComponent(ref, Player.getComponentType());
-                if (player == null) {
+                if (ref == null || !ref.isValid()) {
                     return;
                 }
-                Inventory inv = player.getInventory();
                 List<SavedSlot> slots = new ArrayList<>();
-                for (int i = 0; i < SECTION_COUNT; i++) {
-                    snapshot(container(inv, i), i, slots);
+                for (int i = 0; i < Inventories.SECTION_COUNT; i++) {
+                    snapshot(Inventories.section(store, ref, i), i, slots);
                 }
                 saved.put(uuid, slots);
-                clearAll(inv);
-                if (andThen != null) {
-                    andThen.accept(inv);
+                clearAll(store, ref);
+                ItemContainer hotbar = Inventories.section(store, ref, Inventories.HOTBAR);
+                if (andThen != null && hotbar != null) {
+                    andThen.accept(hotbar);
                 }
             } catch (Exception e) {
                 Console.warning("InventoryVault.stash failed: " + e.getMessage());
@@ -96,9 +86,9 @@ public final class InventoryVault {
         synchronized (slots) {
             for (short slot = 0; slot < 64; slot++) {
                 final short s = slot;
-                boolean taken = slots.stream().anyMatch(x -> x.container() == STORAGE && x.slot() == s);
+                boolean taken = slots.stream().anyMatch(x -> x.container() == Inventories.STORAGE && x.slot() == s);
                 if (!taken) {
-                    slots.add(new SavedSlot(STORAGE, s, stack));
+                    slots.add(new SavedSlot(Inventories.STORAGE, s, stack));
                     return true;
                 }
             }
@@ -124,13 +114,7 @@ public final class InventoryVault {
                 if (pr == null) {
                     return;
                 }
-                Store<EntityStore> store = world.getEntityStore().getStore();
-                Ref<EntityStore> ref = pr.getReference();
-                Player player = store.getComponent(ref, Player.getComponentType());
-                if (player == null) {
-                    return;
-                }
-                apply(player.getInventory(), slots);
+                apply(world.getEntityStore().getStore(), pr.getReference(), slots);
             } catch (Exception e) {
                 Console.warning("InventoryVault.restore failed: " + e.getMessage());
             }
@@ -158,20 +142,20 @@ public final class InventoryVault {
         Ref<EntityStore> ref = pr.getReference();
         world.execute(() -> {
             try {
-                Player player = world.getEntityStore().getStore().getComponent(ref, Player.getComponentType());
-                if (player != null) {
-                    apply(player.getInventory(), slots);
-                }
+                apply(world.getEntityStore().getStore(), ref, slots);
             } catch (Exception e) {
                 Console.warning("InventoryVault.restoreOnDisconnect failed: " + e.getMessage());
             }
         });
     }
 
-    private void apply(Inventory inv, List<SavedSlot> slots) {
-        clearAll(inv);
+    private void apply(Store<EntityStore> store, Ref<EntityStore> ref, List<SavedSlot> slots) {
+        if (ref == null || !ref.isValid()) {
+            return;
+        }
+        clearAll(store, ref);
         for (SavedSlot slot : slots) {
-            ItemContainer c = container(inv, slot.container());
+            ItemContainer c = Inventories.section(store, ref, slot.container());
             if (c != null && slot.stack() != null) {
                 c.setItemStackForSlot(slot.slot(), slot.stack());
             }
@@ -189,21 +173,9 @@ public final class InventoryVault {
         });
     }
 
-    private ItemContainer container(Inventory inv, int index) {
-        return switch (index) {
-            case HOTBAR -> inv.getHotbar();
-            case STORAGE -> inv.getStorage();
-            case BACKPACK -> inv.getBackpack();
-            case ARMOR -> inv.getArmor();
-            case UTILITY -> inv.getUtility();
-            case TOOLS -> inv.getTools();
-            default -> null;
-        };
-    }
-
-    private void clearAll(Inventory inv) {
-        for (int i = 0; i < SECTION_COUNT; i++) {
-            ItemContainer c = container(inv, i);
+    private void clearAll(Store<EntityStore> store, Ref<EntityStore> ref) {
+        for (int i = 0; i < Inventories.SECTION_COUNT; i++) {
+            ItemContainer c = Inventories.section(store, ref, i);
             if (c != null) {
                 c.clear();
             }

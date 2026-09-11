@@ -157,6 +157,18 @@ public class AntiXray extends JavaPlugin {
         } catch (Exception e) {
             Console.warning("Failed to register boot listener: " + e.getMessage());
         }
+        try {
+            // Keyed by world, so global: we want every player in every world.
+            getEventRegistry().registerGlobal(
+                    com.hypixel.hytale.server.core.event.events.player.PlayerReadyEvent.class,
+                    event -> {
+                        if (spectateManager != null) {
+                            spectateManager.handleReady(event.getPlayerRef());
+                        }
+                    });
+        } catch (Exception e) {
+            Console.warning("Failed to register ready listener: " + e.getMessage());
+        }
     }
 
     /**
@@ -238,6 +250,9 @@ public class AntiXray extends JavaPlugin {
     /** Fired when the server finishes booting; lets the update banner print last (see checkForUpdates). */
     private void onBoot(com.hypixel.hytale.server.core.event.events.BootEvent event) {
         this.booted = true;
+        if (spectateManager != null) {
+            spectateManager.logModeStatus(); // asset store is loaded by now
+        }
         maybeAnnounceUpdate();
     }
 
